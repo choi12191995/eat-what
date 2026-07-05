@@ -1,8 +1,7 @@
 {
   // Cloudflare Pages project config — deploy with:  pnpm run deploy
-  // Forks: replace account_id with your own (or delete the line and let wrangler ask).
+  // (the account id lives in the deploy script; forks replace it with their own)
   "name": "eat-what",
   "pages_build_output_dir": "dist",
-  "compatibility_date": "2026-07-01",
-  "account_id": "d46ee540323ceab49cf03f0c129963ac"
+  "compatibility_date": "2026-07-01"
 }

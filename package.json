@@ -18,7 +18,7 @@
     "lint": "eslint .",
     "format": "prettier --write src/",
     "icons": "pwa-assets-generator --preset minimal-2023 public/logo.svg",
-    "deploy": "pnpm build && pnpm dlx wrangler@4.80.0 pages deploy dist --project-name eat-what"
+    "deploy": "pnpm build && CLOUDFLARE_ACCOUNT_ID=d46ee540323ceab49cf03f0c129963ac pnpm dlx wrangler@4.80.0 pages deploy dist --project-name eat-what"
   },
   "dependencies": {
     "@vueuse/core": "^14.3.0",
