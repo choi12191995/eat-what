@@ -5,6 +5,8 @@ import { usePreferredDark } from '@vueuse/core'
 
 import TabBar from '@/components/ui/TabBar.vue'
 import SetupChecklist from '@/components/onboarding/SetupChecklist.vue'
+import UpdateToast from '@/components/pwa/UpdateToast.vue'
+import IosInstallHint from '@/components/pwa/IosInstallHint.vue'
 import { useSettingsStore } from '@/stores/settings'
 
 const settings = useSettingsStore()
@@ -33,5 +35,7 @@ watchEffect(() => {
     </main>
     <TabBar />
     <SetupChecklist />
+    <UpdateToast />
+    <IosInstallHint />
   </div>
 </template>

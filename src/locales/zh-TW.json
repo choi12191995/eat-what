@@ -42,6 +42,8 @@
     "openNow": "只要營業中",
     "minRating": "最低評分",
     "partySize": "用餐人數",
+    "noRepeat": "略過最近吃過的",
+    "days": "{n} 天",
     "any": "不限",
     "reset": "重設",
     "saveDefault": "設為預設",
@@ -53,7 +55,13 @@
     "priceUnknown": "價格未知",
     "distanceAway": "距離 {d}",
     "respin": "再抽",
-    "accept": "就吃這家！"
+    "accept": "就吃這家！",
+    "openInMaps": "Google 地圖",
+    "openInOpenRice": "OpenRice",
+    "never": "以後不要再抽到這家"
+  },
+  "common": {
+    "close": "關閉"
   },
   "cuisine": {
     "cantonese": "粵菜",
@@ -79,7 +87,16 @@
     "middleEastern": "中東菜"
   },
   "history": {
-    "empty": "還沒有紀錄，抽中的餐廳會出現在這裡。"
+    "empty": "還沒有紀錄，抽中的餐廳會出現在這裡。",
+    "lunch": "午餐",
+    "dinner": "晚餐",
+    "topCuisines": "你的最愛："
+  },
+  "pwa": {
+    "updated": "有更新——點一下重新載入",
+    "iosTitle": "安裝食乜好",
+    "iosHint": "在 Safari 點「分享」按鈕，再選「加入主畫面」，就能像 App 一樣使用。",
+    "gotIt": "知道了"
   },
   "settings": {
     "title": "設定",
@@ -95,6 +112,18 @@
       "active": "金鑰已儲存在本機——即時餐廳資料已啟用。",
       "inactive": "尚未設定金鑰——目前使用示範資料。",
       "guide": "開啟設定指南"
+    },
+    "blocklist": {
+      "title": "拒絕往來名單",
+      "empty": "目前是空的——可以在結果卡片把餐廳加入。",
+      "unblock": "解除"
+    },
+    "data": {
+      "title": "你的資料",
+      "note": "所有資料只存在這部裝置。iOS 可能在約 7 天未使用後清除瀏覽器資料——重要紀錄請先匯出備份。",
+      "export": "匯出 JSON",
+      "clear": "清除紀錄",
+      "confirmClear": "確定刪除所有抽選紀錄？此操作無法復原。"
     }
   },
   "setup": {

@@ -7,6 +7,7 @@ import { getProvider } from '@/lib/places'
 import { DEMO_ORIGIN } from '@/lib/places/mockProvider'
 import { detectRegion } from '@/lib/geo/region'
 import { createCacheRepo } from '@/lib/db/cacheRepo'
+import { createBlocklistRepo, createHistoryRepo } from '@/lib/db/historyRepo'
 import { getDb } from '@/lib/db/schema'
 import { getCurrentLocation } from './useOrigin'
 import { useDrawStore } from '@/stores/draw'
@@ -15,6 +16,8 @@ import { useSettingsStore } from '@/stores/settings'
 export function useDraw() {
   const drawStore = useDrawStore()
   const settings = useSettingsStore()
+  const history = createHistoryRepo(getDb())
+  const blocklist = createBlocklistRepo(getDb())
 
   const busy = computed(() => drawStore.phase === 'loading' || drawStore.phase === 'spinning')
   const isDemo = computed(() => !settings.googleApiKey)
@@ -43,11 +46,17 @@ export function useDraw() {
       }
       const region = detectRegion(origin, 'HK')
       const provider = getProvider(settings.googleApiKey)
-      const outcome = await runDraw(drawStore.conditions, origin, {
+      const cond = drawStore.conditions
+      const outcome = await runDraw(cond, origin, {
         provider,
         lang: settings.locale,
         region,
         cache: provider.kind === 'google' ? createCacheRepo(getDb()) : undefined,
+        blockedIds: await blocklist.ids(),
+        recentIds:
+          cond.excludeRecentDays !== null
+            ? await history.recentAcceptedPlaceIds(cond.excludeRecentDays)
+            : new Set(),
       })
       drawStore.setOutcome(outcome, origin, region)
       if (outcome.candidates.length > 0) {
@@ -93,5 +102,30 @@ export function useDraw() {
     await startDraw()
   }
 
-  return { busy, isDemo, startDraw, applyRelaxation }
+  /** Accept the winner: close the card and persist the draw to local history. */
+  async function accept() {
+    const winner = drawStore.winner
+    drawStore.acceptWinner()
+    if (winner) {
+      try {
+        await history.addAccepted(winner, drawStore.conditions)
+      } catch {
+        // history is best-effort; never block the happy path
+      }
+    }
+  }
+
+  /** "Never suggest this again": blocklist the winner and spin a replacement. */
+  async function blockCurrent() {
+    const winner = drawStore.winner
+    if (!winner) return
+    try {
+      await blocklist.add(winner.id, winner.name)
+    } catch {
+      // best-effort
+    }
+    drawStore.respin()
+  }
+
+  return { busy, isDemo, startDraw, applyRelaxation, accept, blockCurrent }
 }

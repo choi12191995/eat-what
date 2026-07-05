@@ -17,7 +17,7 @@
     "typecheck": "vue-tsc -b",
     "lint": "eslint .",
     "format": "prettier --write src/",
-    "icons": "pwa-assets-generator --preset minimal-2023 src/assets/logo.svg",
+    "icons": "pwa-assets-generator --preset minimal-2023 public/logo.svg",
     "deploy": "pnpm build && pnpm dlx wrangler pages deploy dist --project-name eat-what"
   },
   "dependencies": {

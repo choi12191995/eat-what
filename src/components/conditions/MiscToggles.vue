@@ -66,6 +66,27 @@ function bumpParty(delta: number) {
       </div>
     </div>
 
+    <!-- don't repeat recent places -->
+    <div class="flex items-center justify-between gap-3">
+      <span class="shrink-0 text-sm">{{ t('conditions.noRepeat') }}</span>
+      <div class="flex gap-1.5">
+        <button
+          v-for="opt in [null, 3, 7, 14]"
+          :key="opt ?? 'off'"
+          type="button"
+          class="rounded-full border px-2.5 py-1 text-xs transition-all"
+          :class="
+            drawStore.conditions.excludeRecentDays === opt
+              ? 'border-orange-500 bg-orange-500/10 font-semibold text-orange-600 dark:text-orange-400'
+              : 'border-stone-300 text-stone-500 dark:border-stone-700 dark:text-stone-400'
+          "
+          @click="drawStore.conditions.excludeRecentDays = opt"
+        >
+          {{ opt === null ? t('conditions.any') : t('conditions.days', { n: opt }) }}
+        </button>
+      </div>
+    </div>
+
     <!-- party size -->
     <div class="flex items-center justify-between">
       <span class="text-sm">{{ t('conditions.partySize') }}</span>

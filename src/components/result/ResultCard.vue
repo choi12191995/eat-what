@@ -2,21 +2,43 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { LatLng, Restaurant } from '@/types/models'
 import ModalShell from '@/components/ui/ModalShell.vue'
 import RatingStars from '@/components/ui/RatingStars.vue'
 import { cuisinesOfTypes, emojiForTypes } from '@/lib/places/cuisines'
 import { formatPrice } from '@/lib/format/price'
 import { formatDistance, haversineMeters } from '@/lib/geo/distance'
+import { detectRegion } from '@/lib/geo/region'
+import { buildGoogleMapsUrl } from '@/lib/links/gmaps'
+import { buildOpenRiceUrl } from '@/lib/links/openrice'
 import { wheelColor } from '@/lib/draw/palette'
 import { getProvider } from '@/lib/places'
+import { useDraw } from '@/composables/useDraw'
 import { useDrawStore } from '@/stores/draw'
 import { useSettingsStore } from '@/stores/settings'
+
+const props = defineProps<{
+  /** History mode: show this restaurant read-only instead of the live winner */
+  restaurant?: Restaurant | null
+  open?: boolean
+}>()
+const emit = defineEmits<{ close: [] }>()
 
 const { t, locale } = useI18n()
 const drawStore = useDrawStore()
 const settings = useSettingsStore()
+const { accept, blockCurrent } = useDraw()
 
-const r = computed(() => drawStore.winner)
+const readonly = computed(() => props.restaurant !== undefined)
+const r = computed(() => (readonly.value ? (props.restaurant ?? null) : drawStore.winner))
+const isOpen = computed(() =>
+  readonly.value ? !!props.open && !!r.value : drawStore.showResult && !!r.value,
+)
+
+const region = computed(() =>
+  readonly.value && r.value ? detectRegion(r.value.location, 'HK') : drawStore.region,
+)
+const origin = computed<LatLng | null>(() => (readonly.value ? null : drawStore.lastOrigin))
 
 const photoFailed = ref(false)
 watch(r, () => (photoFailed.value = false))
@@ -30,24 +52,32 @@ const photoSrc = computed(() => {
 })
 
 const price = computed(() =>
-  r.value ? formatPrice(r.value, locale.value, drawStore.region) : null,
+  r.value ? formatPrice(r.value, locale.value, region.value) : null,
 )
 
 const distanceText = computed(() => {
-  if (!r.value || !drawStore.lastOrigin) return null
-  return formatDistance(haversineMeters(drawStore.lastOrigin, r.value.location), locale.value)
+  if (!r.value || !origin.value) return null
+  return formatDistance(haversineMeters(origin.value, r.value.location), locale.value)
 })
 
-const cuisineTags = computed(() =>
-  r.value ? cuisinesOfTypes(r.value.types).slice(0, 2) : [],
-)
+const cuisineTags = computed(() => (r.value ? cuisinesOfTypes(r.value.types).slice(0, 2) : []))
 
 const heroEmoji = computed(() => (r.value ? emojiForTypes(r.value.types) : '🍽️'))
-const heroColor = computed(() => wheelColor(drawStore.winnerIndex >= 0 ? drawStore.winnerIndex : 0))
+const heroColor = computed(() => wheelColor(drawStore.winnerIndex >= 0 ? drawStore.winnerIndex : 2))
+
+const mapsUrl = computed(() => (r.value ? buildGoogleMapsUrl(r.value) : null))
+const openRiceUrl = computed(() =>
+  r.value ? buildOpenRiceUrl(r.value.name, region.value, locale.value as 'en' | 'zh-TW') : null,
+)
+
+function close() {
+  if (readonly.value) emit('close')
+  else drawStore.acceptWinner()
+}
 </script>
 
 <template>
-  <ModalShell :open="drawStore.showResult && !!r" @close="drawStore.acceptWinner()">
+  <ModalShell :open="isOpen" @close="close">
     <div v-if="r">
       <!-- hero: real photo when the live provider has one, emoji art otherwise -->
       <img
@@ -109,7 +139,29 @@ const heroColor = computed(() => wheelColor(drawStore.winnerIndex >= 0 ? drawSto
           <p v-if="r.address" class="text-stone-500 dark:text-stone-400">🏠 {{ r.address }}</p>
         </div>
 
-        <div class="flex gap-2 pt-2">
+        <!-- external links -->
+        <div class="flex flex-wrap gap-2 pt-1">
+          <a
+            v-if="mapsUrl"
+            :href="mapsUrl"
+            target="_blank"
+            rel="noopener"
+            class="rounded-full border border-stone-300 px-3 py-1.5 text-sm font-semibold text-stone-600 active:scale-95 dark:border-stone-700 dark:text-stone-300"
+          >
+            🗺️ {{ t('result.openInMaps') }}
+          </a>
+          <a
+            v-if="openRiceUrl"
+            :href="openRiceUrl"
+            target="_blank"
+            rel="noopener"
+            class="rounded-full border border-stone-300 px-3 py-1.5 text-sm font-semibold text-stone-600 active:scale-95 dark:border-stone-700 dark:text-stone-300"
+          >
+            🍚 {{ t('result.openInOpenRice') }}
+          </a>
+        </div>
+
+        <div v-if="!readonly" class="flex gap-2 pt-2">
           <button
             type="button"
             class="flex-1 rounded-xl border border-stone-300 px-3 py-3 text-sm font-semibold text-stone-600 active:scale-95 dark:border-stone-700 dark:text-stone-300"
@@ -120,11 +172,27 @@ const heroColor = computed(() => wheelColor(drawStore.winnerIndex >= 0 ? drawSto
           <button
             type="button"
             class="flex-[2] rounded-xl bg-orange-500 px-3 py-3 text-sm font-bold text-white shadow-md active:scale-95"
-            @click="drawStore.acceptWinner()"
+            @click="accept()"
           >
             😋 {{ t('result.accept') }}
           </button>
         </div>
+        <button
+          v-if="!readonly"
+          type="button"
+          class="w-full pb-1 text-center text-xs text-stone-400 underline dark:text-stone-500"
+          @click="blockCurrent()"
+        >
+          🚫 {{ t('result.never') }}
+        </button>
+        <button
+          v-else
+          type="button"
+          class="w-full rounded-xl border border-stone-300 px-3 py-3 text-sm font-semibold text-stone-600 dark:border-stone-700 dark:text-stone-300"
+          @click="close"
+        >
+          {{ t('common.close') }}
+        </button>
       </div>
     </div>
   </ModalShell>

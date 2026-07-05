@@ -2,6 +2,8 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import BlocklistManager from '@/components/settings/BlocklistManager.vue'
+import DataControls from '@/components/settings/DataControls.vue'
 import { validateGoogleKey } from '@/lib/places/validateKey'
 import { useSettingsStore, type AppLocale, type ThemePref } from '@/stores/settings'
 
@@ -133,5 +135,8 @@ function clearKey() {
         🚀 {{ t('settings.google.guide') }}
       </button>
     </section>
+
+    <BlocklistManager />
+    <DataControls />
   </div>
 </template>

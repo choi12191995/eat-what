@@ -42,6 +42,8 @@
     "openNow": "Open now only",
     "minRating": "Min rating",
     "partySize": "Party size",
+    "noRepeat": "Skip recent picks",
+    "days": "{n}d",
     "any": "Any",
     "reset": "Reset",
     "saveDefault": "Save as default",
@@ -53,7 +55,13 @@
     "priceUnknown": "Price n/a",
     "distanceAway": "{d} away",
     "respin": "Re-spin",
-    "accept": "Let's eat!"
+    "accept": "Let's eat!",
+    "openInMaps": "Google Maps",
+    "openInOpenRice": "OpenRice",
+    "never": "Never suggest this place again"
+  },
+  "common": {
+    "close": "Close"
   },
   "cuisine": {
     "cantonese": "Cantonese",
@@ -79,7 +87,16 @@
     "middleEastern": "Middle Eastern"
   },
   "history": {
-    "empty": "No draws yet. Your picks will appear here."
+    "empty": "No draws yet. Your picks will appear here.",
+    "lunch": "Lunch",
+    "dinner": "Dinner",
+    "topCuisines": "Your favourites:"
+  },
+  "pwa": {
+    "updated": "Update ready — tap to reload",
+    "iosTitle": "Install EatWhat",
+    "iosHint": "In Safari: tap the Share button, then “Add to Home Screen” for the full app experience.",
+    "gotIt": "Got it"
   },
   "settings": {
     "title": "Settings",
@@ -95,6 +112,18 @@
       "active": "Key saved on this device — live restaurant data is on.",
       "inactive": "No key yet — the app runs on demo data.",
       "guide": "Open the setup guide"
+    },
+    "blocklist": {
+      "title": "Never-suggest list",
+      "empty": "Empty — block places from their result card.",
+      "unblock": "Unblock"
+    },
+    "data": {
+      "title": "Your data",
+      "note": "Everything lives only on this device. iOS may evict browser data after ~7 days of not using the site — export a backup if your history matters.",
+      "export": "Export JSON",
+      "clear": "Clear history",
+      "confirmClear": "Delete all draw history? This cannot be undone."
     }
   },
   "setup": {
