@@ -8,6 +8,9 @@
     "history": "History",
     "settings": "Settings"
   },
+  "home": {
+    "moodPlaceholder": "🤖 Tell the AI your mood… e.g. “cold day, want soup”"
+  },
   "draw": {
     "cta": "DRAW 🎲",
     "finding": "Finding…",
@@ -58,6 +61,8 @@
     "accept": "Let's eat!",
     "openInMaps": "Google Maps",
     "openInOpenRice": "OpenRice",
+    "share": "Share",
+    "copied": "Copied",
     "never": "Never suggest this place again"
   },
   "common": {
@@ -112,6 +117,17 @@
       "active": "Key saved on this device — live restaurant data is on.",
       "inactive": "No key yet — the app runs on demo data.",
       "guide": "Open the setup guide"
+    },
+    "ai": {
+      "title": "AI concierge (optional)",
+      "note": "Any OpenAI-compatible endpoint. Everything stays on this device; requests go straight from your browser to the endpoint you set. Configured = a mood box appears on the draw screen and result cards get a one-line blurb.",
+      "baseUrl": "Base URL",
+      "apiKey": "API key",
+      "model": "Model",
+      "modelPlaceholder": "e.g. gpt-4o-mini",
+      "loadModels": "Load models",
+      "loaded": "{n} models loaded",
+      "loadError": "Couldn't load models — check base URL and key."
     },
     "blocklist": {
       "title": "Never-suggest list",

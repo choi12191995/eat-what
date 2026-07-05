@@ -49,7 +49,16 @@ Any static host works — the build is fully static with no environment variable
 
 ## Cost model & quotas
 
-_To be completed — table of Places API SKU free tiers and how the app stays inside them (search caching, winner-only photos)._
+Google's post-March-2025 pricing gives per-SKU monthly free call caps. The app is engineered to stay inside them:
+
+| What | SKU tier | Free/month | How the app protects it |
+|---|---|---|---|
+| Restaurant search (with rating/price/hours) | Enterprise | 1,000 | 24 h IndexedDB cache keyed by ~110 m geocell + filters; re-spins reuse the fetched pool, never re-query |
+| Place photos | Enterprise | 1,000 | Exactly one photo, only on the winner card, ≤800 px, service-worker CacheFirst (7 days) |
+| Location autocomplete | Essentials | 10,000 | Session tokens; one cheap details call terminates each session |
+| Key validation | Essentials (IDs-only Text Search) | unlimited | Free by design |
+
+Rough personal usage — ~10 draws/day with varied filters — lands around 100–300 Enterprise calls/month. **Your quota cap (step 3 of setup) is the hard guarantee** either way: worst case the API pauses until tomorrow; your card is never touched.
 
 ## Roadmap
 

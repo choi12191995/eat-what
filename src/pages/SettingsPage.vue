@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import AiSettings from '@/components/settings/AiSettings.vue'
 import BlocklistManager from '@/components/settings/BlocklistManager.vue'
 import DataControls from '@/components/settings/DataControls.vue'
 import { validateGoogleKey } from '@/lib/places/validateKey'
@@ -136,6 +137,7 @@ function clearKey() {
       </button>
     </section>
 
+    <AiSettings />
     <BlocklistManager />
     <DataControls />
   </div>

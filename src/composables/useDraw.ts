@@ -6,6 +6,7 @@ import { GooglePlacesError } from '@/lib/places/googlePlaces'
 import { getProvider } from '@/lib/places'
 import { DEMO_ORIGIN } from '@/lib/places/mockProvider'
 import { detectRegion } from '@/lib/geo/region'
+import { conciergePick } from '@/lib/ai/client'
 import { createCacheRepo } from '@/lib/db/cacheRepo'
 import { createBlocklistRepo, createHistoryRepo } from '@/lib/db/historyRepo'
 import { getDb } from '@/lib/db/schema'
@@ -59,6 +60,26 @@ export function useDraw() {
             : new Set(),
       })
       drawStore.setOutcome(outcome, origin, region)
+      drawStore.aiReason = null
+      // Concierge: with a mood set and AI configured, the "random" winner is
+      // AI-picked instead — the wheel still spins to it like any other draw.
+      const mood = drawStore.mood.trim()
+      if (outcome.candidates.length > 0 && mood) {
+        const pick = await conciergePick(
+          { baseUrl: settings.aiBaseUrl, apiKey: settings.aiApiKey, model: settings.aiModel },
+          outcome.candidates,
+          mood,
+          settings.locale,
+          cond.partySize,
+        )
+        if (pick) {
+          const idx = outcome.candidates.findIndex((c) => c.id === pick.placeId)
+          if (idx >= 0) {
+            drawStore.winnerIndex = idx
+            drawStore.aiReason = pick.reason
+          }
+        }
+      }
       if (outcome.candidates.length > 0) {
         drawStore.phase = 'spinning'
       } else {

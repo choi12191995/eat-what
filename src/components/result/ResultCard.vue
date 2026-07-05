@@ -5,6 +5,8 @@ import { useI18n } from 'vue-i18n'
 import type { LatLng, Restaurant } from '@/types/models'
 import ModalShell from '@/components/ui/ModalShell.vue'
 import RatingStars from '@/components/ui/RatingStars.vue'
+import AiBlurb from './AiBlurb.vue'
+import { useShareResult } from '@/composables/useShareResult'
 import { cuisinesOfTypes, emojiForTypes } from '@/lib/places/cuisines'
 import { formatPrice } from '@/lib/format/price'
 import { formatDistance, haversineMeters } from '@/lib/geo/distance'
@@ -28,6 +30,7 @@ const { t, locale } = useI18n()
 const drawStore = useDrawStore()
 const settings = useSettingsStore()
 const { accept, blockCurrent } = useDraw()
+const { share, copied } = useShareResult()
 
 const readonly = computed(() => props.restaurant !== undefined)
 const r = computed(() => (readonly.value ? (props.restaurant ?? null) : drawStore.winner))
@@ -139,6 +142,15 @@ function close() {
           <p v-if="r.address" class="text-stone-500 dark:text-stone-400">🏠 {{ r.address }}</p>
         </div>
 
+        <!-- AI: concierge reason for this pick, or an appetizing blurb -->
+        <p
+          v-if="!readonly && drawStore.aiReason"
+          class="text-sm text-stone-500 italic dark:text-stone-400"
+        >
+          🤖 {{ drawStore.aiReason }}
+        </p>
+        <AiBlurb v-else-if="!readonly" :restaurant="r" />
+
         <!-- external links -->
         <div class="flex flex-wrap gap-2 pt-1">
           <a
@@ -159,6 +171,13 @@ function close() {
           >
             🍚 {{ t('result.openInOpenRice') }}
           </a>
+          <button
+            type="button"
+            class="rounded-full border border-stone-300 px-3 py-1.5 text-sm font-semibold text-stone-600 active:scale-95 dark:border-stone-700 dark:text-stone-300"
+            @click="share(r, t('app.name'))"
+          >
+            {{ copied ? '✅ ' + t('result.copied') : '📤 ' + t('result.share') }}
+          </button>
         </div>
 
         <div v-if="!readonly" class="flex gap-2 pt-2">

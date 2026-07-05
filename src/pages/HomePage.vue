@@ -8,6 +8,7 @@ import SpinWheel, { type WheelItem } from '@/components/wheel/SpinWheel.vue'
 import ConditionsDrawer from '@/components/conditions/ConditionsDrawer.vue'
 import ResultCard from '@/components/result/ResultCard.vue'
 import RelaxationHints from '@/components/result/RelaxationHints.vue'
+import { aiConfigured } from '@/lib/ai/client'
 import { CUISINES, emojiForTypes } from '@/lib/places/cuisines'
 import { useDraw } from '@/composables/useDraw'
 import { useHaptics } from '@/composables/useHaptics'
@@ -35,6 +36,14 @@ const wheelItems = computed<WheelItem[]>(() =>
         emoji: emojiForTypes(r.types),
       }))
     : placeholderItems,
+)
+
+const hasAi = computed(() =>
+  aiConfigured({
+    baseUrl: settings.aiBaseUrl,
+    apiKey: settings.aiApiKey,
+    model: settings.aiModel,
+  }),
 )
 
 const activeFilterCount = computed(() => {
@@ -105,6 +114,15 @@ async function onDraw() {
     <p v-if="drawStore.errorKey" class="text-sm text-red-500 dark:text-red-400">
       {{ t(drawStore.errorKey) }}
     </p>
+
+    <input
+      v-if="hasAi"
+      v-model="drawStore.mood"
+      type="text"
+      maxlength="120"
+      :placeholder="t('home.moodPlaceholder')"
+      class="w-full max-w-sm rounded-2xl border border-violet-300 bg-transparent px-4 py-2.5 text-sm outline-none placeholder:text-stone-400 focus:border-violet-500 dark:border-violet-900"
+    />
 
     <div class="flex w-full max-w-sm items-center gap-3">
       <button

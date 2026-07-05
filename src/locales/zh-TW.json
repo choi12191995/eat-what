@@ -8,6 +8,9 @@
     "history": "紀錄",
     "settings": "設定"
   },
+  "home": {
+    "moodPlaceholder": "🤖 跟 AI 說說你想吃什麼…例如「天冷，想喝湯」"
+  },
   "draw": {
     "cta": "抽！🎲",
     "finding": "搜尋中…",
@@ -58,6 +61,8 @@
     "accept": "就吃這家！",
     "openInMaps": "Google 地圖",
     "openInOpenRice": "OpenRice",
+    "share": "分享",
+    "copied": "已複製",
     "never": "以後不要再抽到這家"
   },
   "common": {
@@ -112,6 +117,17 @@
       "active": "金鑰已儲存在本機——即時餐廳資料已啟用。",
       "inactive": "尚未設定金鑰——目前使用示範資料。",
       "guide": "開啟設定指南"
+    },
+    "ai": {
+      "title": "AI 智慧推薦（選用）",
+      "note": "支援任何 OpenAI 相容端點。所有設定只存在本機，請求直接由瀏覽器送到你設定的端點。設定完成後，抽選畫面會出現心情輸入框，結果卡片也會有一句 AI 推薦語。",
+      "baseUrl": "Base URL",
+      "apiKey": "API 金鑰",
+      "model": "模型",
+      "modelPlaceholder": "例如 gpt-4o-mini",
+      "loadModels": "載入模型",
+      "loaded": "已載入 {n} 個模型",
+      "loadError": "無法載入模型——請檢查 Base URL 和金鑰。"
     },
     "blocklist": {
       "title": "拒絕往來名單",

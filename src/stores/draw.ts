@@ -31,6 +31,10 @@ export const useDrawStore = defineStore('draw', () => {
   const errorKey = ref<string | null>(null)
   const drawerOpen = ref(false)
   const showResult = ref(false)
+  /** Free-text mood for the AI concierge (only used when AI is configured) */
+  const mood = ref('')
+  /** AI's one-line justification when the winner was concierge-picked */
+  const aiReason = ref<string | null>(null)
 
   const winner = computed<Restaurant | null>(() =>
     winnerIndex.value >= 0 ? (candidates.value[winnerIndex.value] ?? null) : null,
@@ -88,6 +92,8 @@ export const useDrawStore = defineStore('draw', () => {
     errorKey,
     drawerOpen,
     showResult,
+    mood,
+    aiReason,
     winner,
     setOutcome,
     respin,
