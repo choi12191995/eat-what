@@ -8,8 +8,68 @@
     "history": "紀錄",
     "settings": "設定"
   },
-  "home": {
-    "comingSoon": "轉盤即將登場——先保持肚餓。"
+  "draw": {
+    "cta": "抽！🎲",
+    "finding": "搜尋中…",
+    "demoData": "示範資料",
+    "error": "出了點問題，請再試一次。",
+    "exhausted": "所有符合的餐廳都抽過了！放寬條件再抽一次吧。",
+    "noMatches": "附近沒有符合的餐廳。",
+    "noMatchesRelax": "沒有符合的結果——放寬一個條件？",
+    "relax": {
+      "dropOpenNow": "包含目前休息中的店",
+      "dropMinRating": "取消評分限制",
+      "dropBudget": "不限預算",
+      "dropRecentExclusion": "允許最近去過的店",
+      "widenRadius": "擴大到 {radius}"
+    }
+  },
+  "conditions": {
+    "title": "抽選條件",
+    "cuisine": "菜系",
+    "cuisineHint": "點一下納入 ✓，再點一下排除 ✕，第三下取消。",
+    "budget": "預算（每人）",
+    "budgetHint": "沒有價格資料的店仍會出現，標示為「價格未知」。",
+    "radius": "距離",
+    "more": "更多",
+    "openNow": "只要營業中",
+    "minRating": "最低評分",
+    "partySize": "用餐人數",
+    "any": "不限",
+    "reset": "重設",
+    "saveDefault": "設為預設",
+    "done": "完成"
+  },
+  "result": {
+    "openNow": "營業中",
+    "closed": "休息中",
+    "priceUnknown": "價格未知",
+    "distanceAway": "距離 {d}",
+    "respin": "再抽",
+    "accept": "就吃這家！"
+  },
+  "cuisine": {
+    "cantonese": "粵菜",
+    "chinese": "中菜",
+    "taiwanese": "台灣菜",
+    "japanese": "日本菜",
+    "korean": "韓國菜",
+    "thai": "泰國菜",
+    "vietnamese": "越南菜",
+    "seAsian": "東南亞菜",
+    "indian": "印度菜",
+    "italian": "義大利菜",
+    "french": "法國菜",
+    "western": "西餐",
+    "fastFood": "漢堡快餐",
+    "seafood": "海鮮",
+    "bbq": "燒烤",
+    "noodles": "麵食",
+    "cafe": "咖啡輕食",
+    "dessert": "甜點烘焙",
+    "veggie": "素食",
+    "mexican": "墨西哥菜",
+    "middleEastern": "中東菜"
   },
   "history": {
     "empty": "還沒有紀錄，抽中的餐廳會出現在這裡。"

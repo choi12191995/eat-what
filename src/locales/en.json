@@ -8,8 +8,68 @@
     "history": "History",
     "settings": "Settings"
   },
-  "home": {
-    "comingSoon": "The wheel arrives in the next milestone — stay hungry."
+  "draw": {
+    "cta": "DRAW 🎲",
+    "finding": "Finding…",
+    "demoData": "Demo data",
+    "error": "Something went wrong — try again.",
+    "exhausted": "You re-spun through every match! Loosen a filter and draw again.",
+    "noMatches": "No matches nearby.",
+    "noMatchesRelax": "No matches — loosen one condition?",
+    "relax": {
+      "dropOpenNow": "Include closed-now places",
+      "dropMinRating": "Drop the rating filter",
+      "dropBudget": "Any budget",
+      "dropRecentExclusion": "Allow recent places",
+      "widenRadius": "Widen to {radius}"
+    }
+  },
+  "conditions": {
+    "title": "Draw conditions",
+    "cuisine": "Cuisine",
+    "cuisineHint": "Tap once to include ✓, twice to exclude ✕, three times to clear.",
+    "budget": "Budget (per person)",
+    "budgetHint": "Places without price data still appear, marked “price n/a”.",
+    "radius": "Distance",
+    "more": "More",
+    "openNow": "Open now only",
+    "minRating": "Min rating",
+    "partySize": "Party size",
+    "any": "Any",
+    "reset": "Reset",
+    "saveDefault": "Save as default",
+    "done": "Done"
+  },
+  "result": {
+    "openNow": "Open now",
+    "closed": "Closed",
+    "priceUnknown": "Price n/a",
+    "distanceAway": "{d} away",
+    "respin": "Re-spin",
+    "accept": "Let's eat!"
+  },
+  "cuisine": {
+    "cantonese": "Cantonese",
+    "chinese": "Chinese",
+    "taiwanese": "Taiwanese",
+    "japanese": "Japanese",
+    "korean": "Korean",
+    "thai": "Thai",
+    "vietnamese": "Vietnamese",
+    "seAsian": "SE Asian",
+    "indian": "Indian",
+    "italian": "Italian",
+    "french": "French",
+    "western": "Western",
+    "fastFood": "Burgers & fast food",
+    "seafood": "Seafood",
+    "bbq": "BBQ & grill",
+    "noodles": "Noodles",
+    "cafe": "Café & brunch",
+    "dessert": "Dessert & bakery",
+    "veggie": "Vegetarian",
+    "mexican": "Mexican",
+    "middleEastern": "Middle Eastern"
   },
   "history": {
     "empty": "No draws yet. Your picks will appear here."

@@ -1,6 +1,9 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 
+import type { DrawConditions } from '@/types/models'
+import { makeDefaultConditions } from '@/lib/draw/defaults'
+
 export type ThemePref = 'light' | 'dark' | 'system'
 export type AppLocale = 'en' | 'zh-TW'
 
@@ -23,7 +26,10 @@ export const useSettingsStore = defineStore(
     const aiApiKey = ref('')
     const aiModel = ref('')
 
-    return { locale, theme, googleApiKey, aiBaseUrl, aiApiKey, aiModel }
+    // Starting point for every session's draw conditions
+    const defaultConditions = ref<DrawConditions>(makeDefaultConditions())
+
+    return { locale, theme, googleApiKey, aiBaseUrl, aiApiKey, aiModel, defaultConditions }
   },
   { persist: true },
 )
