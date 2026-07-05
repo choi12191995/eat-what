@@ -29,7 +29,38 @@ export const useSettingsStore = defineStore(
     // Starting point for every session's draw conditions
     const defaultConditions = ref<DrawConditions>(makeDefaultConditions())
 
-    return { locale, theme, googleApiKey, aiBaseUrl, aiApiKey, aiModel, defaultConditions }
+    // Onboarding checklist state
+    const setupDismissed = ref(false)
+    const setupTicks = ref({ project: false, restrict: false, cap: false })
+    /** Runtime-only: whether the setup checklist overlay is open */
+    const setupOpen = ref(false)
+
+    return {
+      locale,
+      theme,
+      googleApiKey,
+      aiBaseUrl,
+      aiApiKey,
+      aiModel,
+      defaultConditions,
+      setupDismissed,
+      setupTicks,
+      setupOpen,
+    }
   },
-  { persist: true },
+  {
+    persist: {
+      pick: [
+        'locale',
+        'theme',
+        'googleApiKey',
+        'aiBaseUrl',
+        'aiApiKey',
+        'aiModel',
+        'defaultConditions',
+        'setupDismissed',
+        'setupTicks',
+      ],
+    },
+  },
 )

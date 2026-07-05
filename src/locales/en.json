@@ -13,6 +13,10 @@
     "finding": "Finding…",
     "demoData": "Demo data",
     "error": "Something went wrong — try again.",
+    "locationDenied": "Location was denied — pick a spot in the filters instead.",
+    "locationFailed": "Couldn't get your location — pick a spot in the filters instead.",
+    "keyInvalid": "Your Google key was rejected — check it in Settings.",
+    "quotaReached": "Daily quota reached — the cap did its job protecting your wallet. Try tomorrow!",
     "exhausted": "You re-spun through every match! Loosen a filter and draw again.",
     "noMatches": "No matches nearby.",
     "noMatchesRelax": "No matches — loosen one condition?",
@@ -31,6 +35,9 @@
     "budget": "Budget (per person)",
     "budgetHint": "Places without price data still appear, marked “price n/a”.",
     "radius": "Distance",
+    "origin": "From where",
+    "originGps": "Current location",
+    "originSearchPlaceholder": "Search a place or area…",
     "more": "More",
     "openNow": "Open now only",
     "minRating": "Min rating",
@@ -82,6 +89,40 @@
       "dark": "Dark",
       "system": "System"
     },
-    "language": "Language"
+    "language": "Language",
+    "google": {
+      "title": "Google Places",
+      "active": "Key saved on this device — live restaurant data is on.",
+      "inactive": "No key yet — the app runs on demo data.",
+      "guide": "Open the setup guide"
+    }
+  },
+  "setup": {
+    "title": "Set up in 5 minutes",
+    "intro": "EatWhat uses your own free Google key for live restaurant data. It stays on your device, and a quota cap you control means your card can never be surprise-billed. No key? Demo mode still works.",
+    "projectT": "1 · Create a Google Cloud project & enable “Places API (New)”",
+    "projectD": "Sign in to Google Cloud Console, create a project (billing must be attached — the free monthly quota covers personal use), then enable exactly “Places API (New)” — not the legacy “Places API”.",
+    "restrictT": "2 · Create an API key and restrict it",
+    "restrictD": "Credentials → Create credentials → API key. Then edit it: Application restrictions → Websites → add {origin} · API restrictions → Places API (New) only.",
+    "capT": "3 · Set a daily quota cap (recommended!)",
+    "capD": "Places API (New) → Quotas: set “Requests per day” to about 100. This is the hard brake that guarantees a $0 bill.",
+    "keyT": "4 · Paste your key",
+    "keyD": "Validation uses a free call — it never costs anything. The key is stored only in this browser.",
+    "keyPlaceholder": "AIza…",
+    "validate": "Validate",
+    "keyValid": "Key works — live data is on!",
+    "keyInvalid": "Key rejected. Check the API restriction includes Places API (New) and this site's origin is allowed.",
+    "keyNetwork": "Network hiccup — try again.",
+    "locT": "5 · Allow location",
+    "locD": "Used to find restaurants around you. You can always pick a spot manually instead.",
+    "locGrant": "Allow location access",
+    "locGranted": "Location allowed",
+    "locDenied": "Denied — you can pick an origin manually in the draw filters.",
+    "openConsole": "Create project",
+    "enableApi": "Enable Places API (New)",
+    "openCredentials": "Open Credentials",
+    "openQuotas": "Open Quotas",
+    "useDemo": "Use demo for now",
+    "done": "Done"
   }
 }

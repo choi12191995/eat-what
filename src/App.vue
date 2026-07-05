@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { watchEffect } from 'vue'
+import { onMounted, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { usePreferredDark } from '@vueuse/core'
 
 import TabBar from '@/components/ui/TabBar.vue'
+import SetupChecklist from '@/components/onboarding/SetupChecklist.vue'
 import { useSettingsStore } from '@/stores/settings'
 
 const settings = useSettingsStore()
 const systemDark = usePreferredDark()
 const { locale } = useI18n()
+
+onMounted(() => {
+  if (!settings.googleApiKey && !settings.setupDismissed) settings.setupOpen = true
+})
 
 watchEffect(() => {
   const dark = settings.theme === 'dark' || (settings.theme === 'system' && systemDark.value)
@@ -27,5 +32,6 @@ watchEffect(() => {
       <RouterView />
     </main>
     <TabBar />
+    <SetupChecklist />
   </div>
 </template>

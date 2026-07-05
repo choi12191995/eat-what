@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { validateGoogleKey } from '@/lib/places/validateKey'
 import { useSettingsStore, type AppLocale, type ThemePref } from '@/stores/settings'
 
 const { t } = useI18n()
@@ -11,6 +13,28 @@ const languages: { value: AppLocale; label: string }[] = [
   { value: 'en', label: 'English' },
   { value: 'zh-TW', label: '繁體中文' },
 ]
+
+const keyDraft = ref(settings.googleApiKey)
+const keyStatus = ref<'idle' | 'checking' | 'valid' | 'invalid' | 'network'>('idle')
+
+async function saveKey() {
+  const key = keyDraft.value.trim()
+  if (!key) return
+  keyStatus.value = 'checking'
+  const result = await validateGoogleKey(key)
+  if (result.ok) {
+    settings.googleApiKey = key
+    keyStatus.value = 'valid'
+  } else {
+    keyStatus.value = result.reason === 'invalid' ? 'invalid' : 'network'
+  }
+}
+
+function clearKey() {
+  settings.googleApiKey = ''
+  keyDraft.value = ''
+  keyStatus.value = 'idle'
+}
 </script>
 
 <template>
@@ -57,6 +81,57 @@ const languages: { value: AppLocale; label: string }[] = [
           {{ lang.label }}
         </button>
       </div>
+    </section>
+
+    <section class="mb-8">
+      <h2 class="mb-2 text-sm font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400">
+        {{ t('settings.google.title') }}
+      </h2>
+      <p class="mb-2 text-xs text-stone-500 dark:text-stone-400">
+        {{ settings.googleApiKey ? t('settings.google.active') : t('settings.google.inactive') }}
+      </p>
+      <div class="flex gap-2">
+        <input
+          v-model="keyDraft"
+          type="text"
+          autocomplete="off"
+          spellcheck="false"
+          :placeholder="t('setup.keyPlaceholder')"
+          class="min-w-0 flex-1 rounded-xl border border-stone-300 bg-transparent px-3 py-2 font-mono text-xs outline-none focus:border-orange-500 dark:border-stone-700"
+        />
+        <button
+          type="button"
+          class="rounded-xl bg-orange-500 px-3 py-2 text-sm font-bold text-white disabled:opacity-50"
+          :disabled="keyStatus === 'checking' || !keyDraft.trim()"
+          @click="saveKey"
+        >
+          {{ keyStatus === 'checking' ? '…' : t('setup.validate') }}
+        </button>
+        <button
+          v-if="settings.googleApiKey"
+          type="button"
+          class="rounded-xl border border-stone-300 px-3 py-2 text-sm text-stone-500 dark:border-stone-700"
+          @click="clearKey"
+        >
+          ✕
+        </button>
+      </div>
+      <p v-if="keyStatus === 'valid'" class="mt-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+        ✅ {{ t('setup.keyValid') }}
+      </p>
+      <p v-else-if="keyStatus === 'invalid'" class="mt-2 text-xs font-semibold text-red-500">
+        {{ t('setup.keyInvalid') }}
+      </p>
+      <p v-else-if="keyStatus === 'network'" class="mt-2 text-xs font-semibold text-amber-600">
+        {{ t('setup.keyNetwork') }}
+      </p>
+      <button
+        type="button"
+        class="mt-3 text-sm font-semibold text-orange-600 underline dark:text-orange-400"
+        @click="settings.setupOpen = true"
+      >
+        🚀 {{ t('settings.google.guide') }}
+      </button>
     </section>
   </div>
 </template>

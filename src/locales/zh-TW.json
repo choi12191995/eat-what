@@ -13,6 +13,10 @@
     "finding": "搜尋中…",
     "demoData": "示範資料",
     "error": "出了點問題，請再試一次。",
+    "locationDenied": "無法取得定位權限——可以在條件裡改為手動選地點。",
+    "locationFailed": "定位失敗——可以在條件裡改為手動選地點。",
+    "keyInvalid": "Google 金鑰被拒絕——請到設定檢查。",
+    "quotaReached": "已達今日配額上限——上限成功保護了你的錢包，明天再試吧！",
     "exhausted": "所有符合的餐廳都抽過了！放寬條件再抽一次吧。",
     "noMatches": "附近沒有符合的餐廳。",
     "noMatchesRelax": "沒有符合的結果——放寬一個條件？",
@@ -31,6 +35,9 @@
     "budget": "預算（每人）",
     "budgetHint": "沒有價格資料的店仍會出現，標示為「價格未知」。",
     "radius": "距離",
+    "origin": "以哪裡為中心",
+    "originGps": "目前位置",
+    "originSearchPlaceholder": "搜尋地點或區域…",
     "more": "更多",
     "openNow": "只要營業中",
     "minRating": "最低評分",
@@ -82,6 +89,40 @@
       "dark": "深色",
       "system": "跟隨系統"
     },
-    "language": "語言"
+    "language": "語言",
+    "google": {
+      "title": "Google Places",
+      "active": "金鑰已儲存在本機——即時餐廳資料已啟用。",
+      "inactive": "尚未設定金鑰——目前使用示範資料。",
+      "guide": "開啟設定指南"
+    }
+  },
+  "setup": {
+    "title": "5 分鐘完成設定",
+    "intro": "食乜好使用你自己的免費 Google 金鑰取得即時餐廳資料。金鑰只存在你的裝置上，而由你控制的配額上限能確保信用卡絕不會被意外收費。沒有金鑰？示範模式一樣可以玩。",
+    "projectT": "1 · 建立 Google Cloud 專案並啟用「Places API (New)」",
+    "projectD": "登入 Google Cloud Console 建立專案（需綁定帳單，個人用量在免費額度內），然後啟用「Places API (New)」——注意不是舊版「Places API」。",
+    "restrictT": "2 · 建立 API 金鑰並設定限制",
+    "restrictD": "憑證 → 建立憑證 → API 金鑰。接著編輯：應用程式限制 → 網站 → 加入 {origin}；API 限制 → 僅允許 Places API (New)。",
+    "capT": "3 · 設定每日配額上限（強烈建議！）",
+    "capD": "Places API (New) → 配額：把「每日要求數」設為約 100。這是保證帳單為 $0 的硬煞車。",
+    "keyT": "4 · 貼上你的金鑰",
+    "keyD": "驗證使用免費呼叫，完全不會產生費用。金鑰只儲存在這個瀏覽器。",
+    "keyPlaceholder": "AIza…",
+    "validate": "驗證",
+    "keyValid": "金鑰有效——即時資料已啟用！",
+    "keyInvalid": "金鑰被拒絕。請確認 API 限制包含 Places API (New)，且已允許本網站來源。",
+    "keyNetwork": "網路不穩——請再試一次。",
+    "locT": "5 · 允許定位",
+    "locD": "用來尋找你附近的餐廳。你也可以隨時改為手動選地點。",
+    "locGrant": "允許定位存取",
+    "locGranted": "已允許定位",
+    "locDenied": "已拒絕——可以在抽選條件中手動選擇中心點。",
+    "openConsole": "建立專案",
+    "enableApi": "啟用 Places API (New)",
+    "openCredentials": "開啟憑證頁",
+    "openQuotas": "開啟配額頁",
+    "useDemo": "先用示範模式",
+    "done": "完成"
   }
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ModalShell from '@/components/ui/ModalShell.vue'
@@ -8,12 +8,26 @@ import { cuisinesOfTypes, emojiForTypes } from '@/lib/places/cuisines'
 import { formatPrice } from '@/lib/format/price'
 import { formatDistance, haversineMeters } from '@/lib/geo/distance'
 import { wheelColor } from '@/lib/draw/palette'
+import { getProvider } from '@/lib/places'
 import { useDrawStore } from '@/stores/draw'
+import { useSettingsStore } from '@/stores/settings'
 
 const { t, locale } = useI18n()
 const drawStore = useDrawStore()
+const settings = useSettingsStore()
 
 const r = computed(() => drawStore.winner)
+
+const photoFailed = ref(false)
+watch(r, () => (photoFailed.value = false))
+
+// Photos are the scarcest quota (1,000 free/month) — load exactly one,
+// only for the winner, at a capped width.
+const photoSrc = computed(() => {
+  const first = r.value?.photoNames[0]
+  if (!first || photoFailed.value) return null
+  return getProvider(settings.googleApiKey).photoUrl(first, 800)
+})
 
 const price = computed(() =>
   r.value ? formatPrice(r.value, locale.value, drawStore.region) : null,
@@ -35,8 +49,17 @@ const heroColor = computed(() => wheelColor(drawStore.winnerIndex >= 0 ? drawSto
 <template>
   <ModalShell :open="drawStore.showResult && !!r" @close="drawStore.acceptWinner()">
     <div v-if="r">
-      <!-- hero: photo placeholder (real photos arrive with the live provider) -->
+      <!-- hero: real photo when the live provider has one, emoji art otherwise -->
+      <img
+        v-if="photoSrc"
+        :src="photoSrc"
+        alt=""
+        class="h-44 w-full rounded-t-3xl object-cover"
+        loading="lazy"
+        @error="photoFailed = true"
+      />
       <div
+        v-else
         class="flex h-40 items-center justify-center rounded-t-3xl text-7xl"
         :style="{ background: `linear-gradient(135deg, ${heroColor}66, ${heroColor})` }"
       >

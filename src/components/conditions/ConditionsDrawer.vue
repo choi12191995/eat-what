@@ -6,6 +6,7 @@ import CuisineChips from './CuisineChips.vue'
 import BudgetSelect from './BudgetSelect.vue'
 import RadiusSelect from './RadiusSelect.vue'
 import MiscToggles from './MiscToggles.vue'
+import OriginPicker from './OriginPicker.vue'
 import { useDrawStore } from '@/stores/draw'
 
 const { t } = useI18n()
@@ -36,6 +37,13 @@ const drawStore = useDrawStore()
           {{ t('conditions.radius') }}
         </h3>
         <RadiusSelect />
+      </section>
+
+      <section>
+        <h3 class="mb-2 text-sm font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400">
+          {{ t('conditions.origin') }}
+        </h3>
+        <OriginPicker />
       </section>
 
       <section>

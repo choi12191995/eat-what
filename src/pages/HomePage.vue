@@ -12,9 +12,11 @@ import { CUISINES, emojiForTypes } from '@/lib/places/cuisines'
 import { useDraw } from '@/composables/useDraw'
 import { useHaptics } from '@/composables/useHaptics'
 import { useDrawStore } from '@/stores/draw'
+import { useSettingsStore } from '@/stores/settings'
 
 const { t } = useI18n()
 const drawStore = useDrawStore()
+const settings = useSettingsStore()
 const { busy, isDemo, startDraw, applyRelaxation } = useDraw()
 const haptics = useHaptics()
 const motion = usePreferredReducedMotion()
@@ -70,12 +72,14 @@ async function onDraw() {
   <div class="mx-auto flex max-w-md flex-col items-center gap-5 px-5 pt-6">
     <div class="flex w-full items-center justify-between">
       <h1 class="text-xl font-black tracking-tight">{{ t('app.name') }} 🍜</h1>
-      <span
+      <button
         v-if="isDemo"
-        class="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-700 dark:bg-violet-950 dark:text-violet-300"
+        type="button"
+        class="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-700 active:scale-95 dark:bg-violet-950 dark:text-violet-300"
+        @click="settings.setupOpen = true"
       >
         🧪 {{ t('draw.demoData') }}
-      </span>
+      </button>
     </div>
 
     <SpinWheel
