@@ -1,0 +1,27 @@
+{
+  "app": {
+    "name": "EatWhat",
+    "tagline": "Where to eat? Spin it."
+  },
+  "nav": {
+    "home": "Draw",
+    "history": "History",
+    "settings": "Settings"
+  },
+  "home": {
+    "comingSoon": "The wheel arrives in the next milestone — stay hungry."
+  },
+  "history": {
+    "empty": "No draws yet. Your picks will appear here."
+  },
+  "settings": {
+    "title": "Settings",
+    "appearance": "Appearance",
+    "theme": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "language": "Language"
+  }
+}

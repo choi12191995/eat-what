@@ -1,0 +1,11 @@
+node_modules/
+dist/
+dev-dist/
+coverage/
+.wrangler/
+*.log
+*.local
+.env
+.env.*
+.DS_Store
+node_modules/.tmp/

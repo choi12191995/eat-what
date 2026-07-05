@@ -1,0 +1,7 @@
+{
+  // Cloudflare Pages project config — deploy with:
+  //   pnpm dlx wrangler pages deploy dist --project-name eat-what
+  "name": "eat-what",
+  "pages_build_output_dir": "dist",
+  "compatibility_date": "2026-07-01"
+}

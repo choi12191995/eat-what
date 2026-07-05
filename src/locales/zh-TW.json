@@ -1,0 +1,27 @@
+{
+  "app": {
+    "name": "食乜好",
+    "tagline": "食乜好？抽一下！"
+  },
+  "nav": {
+    "home": "抽選",
+    "history": "紀錄",
+    "settings": "設定"
+  },
+  "home": {
+    "comingSoon": "轉盤即將登場——先保持肚餓。"
+  },
+  "history": {
+    "empty": "還沒有紀錄，抽中的餐廳會出現在這裡。"
+  },
+  "settings": {
+    "title": "設定",
+    "appearance": "外觀",
+    "theme": {
+      "light": "淺色",
+      "dark": "深色",
+      "system": "跟隨系統"
+    },
+    "language": "語言"
+  }
+}
