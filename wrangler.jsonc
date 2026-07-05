@@ -1,7 +1,8 @@
 {
-  // Cloudflare Pages project config — deploy with:
-  //   pnpm dlx wrangler pages deploy dist --project-name eat-what
+  // Cloudflare Pages project config — deploy with:  pnpm run deploy
+  // Forks: replace account_id with your own (or delete the line and let wrangler ask).
   "name": "eat-what",
   "pages_build_output_dir": "dist",
-  "compatibility_date": "2026-07-01"
+  "compatibility_date": "2026-07-01",
+  "account_id": "d46ee540323ceab49cf03f0c129963ac"
 }
