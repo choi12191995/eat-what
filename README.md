@@ -40,10 +40,12 @@ Requires Node ≥ 20.19 and pnpm.
 ## Deploy your own (Cloudflare Pages)
 
 ```bash
-pnpm dlx wrangler login
-pnpm dlx wrangler pages project create eat-what --production-branch main   # once
+pnpm dlx wrangler@4.80.0 login
+pnpm dlx wrangler@4.80.0 pages project create eat-what --production-branch main   # once
 pnpm run deploy
 ```
+
+> Wrangler is pinned to 4.80.0 because newer versions require Node ≥ 22; on Node 22+ you can drop the pin. Alternatively skip the CLI entirely: connect the GitHub repo in the Cloudflare Pages dashboard (build command `pnpm build`, output `dist`) and every push deploys automatically.
 
 Any static host works — the build is fully static with no environment variables.
 
