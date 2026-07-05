@@ -98,7 +98,6 @@
     "topCuisines": "Your favourites:"
   },
   "pwa": {
-    "updated": "Update ready — tap to reload",
     "iosTitle": "Install EatWhat",
     "iosHint": "In Safari: tap the Share button, then “Add to Home Screen” for the full app experience.",
     "gotIt": "Got it"
