@@ -110,10 +110,12 @@ async function sendPush(
           tag: extra.tag,
           lang: stored.locale,
         }),
-        // No Topic header: Apple's push service rejects some topic values
-        // outright ({"reason":"BadWebPushTopic"} — e.g. 'lunch' failed while
-        // 'test' passed). Its only benefit is collapsing undelivered
-        // duplicates, which the 30-min TTL already bounds.
+        // No Topic header: Apple requires the value to be DECODABLE base64url
+        // (not just base64url charset per RFC 8030), so any length ≡ 1 mod 4
+        // gets 400 {"reason":"BadWebPushTopic"} — 'lunch' (5 chars) failed,
+        // 'test'/'dinner' passed. If collapse behavior is ever wanted again,
+        // base64url-encode the topic first. The 30-min TTL already bounds
+        // duplicate pileup, so we simply omit it.
         options: { ttl: 1800, urgency: 'normal' },
       },
       stored.subscription,
