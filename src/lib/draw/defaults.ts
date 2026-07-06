@@ -9,6 +9,7 @@ export const MIN_RATING_CHOICES = [3.5, 4.0, 4.5] as const
 export function makeDefaultConditions(): DrawConditions {
   return {
     cuisines: { include: [], exclude: [] },
+    keywords: [],
     budgetLevels: [],
     radiusMeters: 1000,
     origin: { mode: 'gps' },

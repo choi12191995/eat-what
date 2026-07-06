@@ -2,9 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- maximum-scale=1 stops iOS auto-zoom on input focus; user-scalable=no
+         disables pinch in the installed app (Safari still allows it for
+         accessibility) — native-app feel per user feedback -->
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <meta name="description" content="EatWhat 食乜好 — a gamified spin-the-wheel PWA that decides where to eat" />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fff7ed" />

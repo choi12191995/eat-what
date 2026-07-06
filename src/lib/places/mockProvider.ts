@@ -1,5 +1,10 @@
 import type { LatLng, PlaceSuggestion, Restaurant } from '@/types/models'
-import type { AutocompleteParams, PlacesProvider, SearchNearbyParams } from './provider'
+import type {
+  AutocompleteParams,
+  PlacesProvider,
+  SearchNearbyParams,
+  SearchTextParams,
+} from './provider'
 import { haversineMeters } from '@/lib/geo/distance'
 
 export const DEMO_ORIGIN: LatLng = { lat: 22.2819, lng: 114.158 }
@@ -101,6 +106,17 @@ export const mockProvider: PlacesProvider = {
       return true
     })
       .slice(0, params.maxResults ?? 20)
+      .map((f) => toRestaurant(f, params.languageCode))
+  },
+
+  async searchText(params: SearchTextParams): Promise<Restaurant[]> {
+    await delay(300 + Math.random() * 200)
+    // Demo mode has no text index — return an in-radius slice so the
+    // fine-tag flow stays demoable end to end
+    return FIXTURES.filter(
+      (f) => haversineMeters(params.origin, { lat: f.lat, lng: f.lng }) <= params.radiusMeters * 2,
+    )
+      .slice(0, Math.min(params.maxResults ?? 8, 8))
       .map((f) => toRestaurant(f, params.languageCode))
   },
 

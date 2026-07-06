@@ -142,12 +142,17 @@ function close() {
           <p v-if="r.address" class="text-stone-500 dark:text-stone-400">🏠 {{ r.address }}</p>
         </div>
 
-        <!-- AI: concierge reason for this pick, or an appetizing blurb -->
+        <!-- AI: concierge reason (this winner WAS the AI's pick) or a generic blurb -->
         <p
           v-if="!readonly && drawStore.aiReason"
           class="text-sm text-stone-500 italic dark:text-stone-400"
         >
-          🤖 {{ drawStore.aiReason }}
+          <span
+            class="mr-1 inline-block rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold not-italic text-violet-700 dark:bg-violet-950 dark:text-violet-300"
+          >
+            🤖 {{ t('result.aiPick') }}
+          </span>
+          {{ drawStore.aiReason }}
         </p>
         <AiBlurb v-else-if="!readonly" :restaurant="r" />
 

@@ -1,5 +1,6 @@
 import type { DrawConditions, LatLng, Restaurant, RelaxationSuggestion } from '@/types/models'
 import { typesForCuisines, CUISINES } from '@/lib/places/cuisines'
+import { keywordTagById, MAX_KEYWORD_TAGS, type KeywordTag } from '@/lib/places/keywords'
 import type { PlacesProvider } from '@/lib/places/provider'
 import { haversineMeters } from '@/lib/geo/distance'
 import type { Region } from '@/lib/geo/region'
@@ -110,11 +111,22 @@ export function searchCacheKey(origin: LatLng, cond: DrawConditions, lang: strin
   return `${cell}|${cond.radiusMeters}|${include}|${exclude}|${lang}`
 }
 
-export async function runDraw(
+/** One cache entry per fine-grained tag — reusable across tag combinations. */
+export function keywordCacheKey(
+  origin: LatLng,
+  radiusMeters: number,
+  tagId: string,
+  lang: string,
+): string {
+  const cell = `${origin.lat.toFixed(3)},${origin.lng.toFixed(3)}`
+  return `kw|${cell}|${radiusMeters}|${tagId}|${lang}`
+}
+
+async function fetchNearby(
   cond: DrawConditions,
   origin: LatLng,
   deps: DrawEngineDeps,
-): Promise<DrawOutcome> {
+): Promise<Restaurant[]> {
   const includedTypes = cond.cuisines.include.length
     ? typesForCuisines(cond.cuisines.include)
     : ALL_FOOD_TYPES
@@ -124,21 +136,71 @@ export async function runDraw(
   const excludedTypes = typesForCuisines(cond.cuisines.exclude).filter((t) => !includedSet.has(t))
 
   const key = searchCacheKey(origin, cond, deps.lang)
-  let raw = (await deps.cache?.get(key)) ?? null
-  if (!raw) {
-    raw = await deps.provider.searchNearby(
-      {
-        origin,
-        radiusMeters: cond.radiusMeters,
-        includedTypes,
-        excludedTypes: excludedTypes.length ? excludedTypes : undefined,
-        languageCode: deps.lang,
-        maxResults: 20,
-      },
-      deps.signal,
-    )
-    await deps.cache?.put(key, raw)
+  const cached = await deps.cache?.get(key)
+  if (cached) return cached
+  const results = await deps.provider.searchNearby(
+    {
+      origin,
+      radiusMeters: cond.radiusMeters,
+      includedTypes,
+      excludedTypes: excludedTypes.length ? excludedTypes : undefined,
+      languageCode: deps.lang,
+      maxResults: 20,
+    },
+    deps.signal,
+  )
+  await deps.cache?.put(key, results)
+  return results
+}
+
+async function fetchKeyword(
+  tag: KeywordTag,
+  cond: DrawConditions,
+  origin: LatLng,
+  deps: DrawEngineDeps,
+): Promise<Restaurant[]> {
+  const key = keywordCacheKey(origin, cond.radiusMeters, tag.id, deps.lang)
+  const cached = await deps.cache?.get(key)
+  if (cached) return cached
+  const results = await deps.provider.searchText(
+    {
+      query: tag.q[deps.lang],
+      origin,
+      radiusMeters: cond.radiusMeters,
+      languageCode: deps.lang,
+      maxResults: 20,
+    },
+    deps.signal,
+  )
+  await deps.cache?.put(key, results)
+  return results
+}
+
+export async function runDraw(
+  cond: DrawConditions,
+  origin: LatLng,
+  deps: DrawEngineDeps,
+): Promise<DrawOutcome> {
+  const tags = (cond.keywords ?? [])
+    .map(keywordTagById)
+    .filter((t): t is KeywordTag => t !== undefined)
+    .slice(0, MAX_KEYWORD_TAGS)
+
+  // Fine tags act as extra "include" selections: results union with the
+  // type-based search. Tags alone ⇒ tag results only — a generic nearby
+  // sweep would drown 茶餐廳 hits in everything else.
+  const searches: Promise<Restaurant[]>[] = []
+  if (cond.cuisines.include.length > 0 || tags.length === 0) {
+    searches.push(fetchNearby(cond, origin, deps))
   }
+  for (const tag of tags) searches.push(fetchKeyword(tag, cond, origin, deps))
+
+  const seen = new Set<string>()
+  const raw = (await Promise.all(searches)).flat().filter((r) => {
+    if (seen.has(r.id)) return false
+    seen.add(r.id)
+    return true
+  })
 
   const ctx: FilterContext = {
     origin,

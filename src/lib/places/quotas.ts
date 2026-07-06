@@ -24,6 +24,6 @@ export const QUOTA_CAPS: QuotaCap[] = [
   { key: 'searchNearby', metric: 'SearchNearbyRequest', perDay: 30, perMinute: 3 },
   { key: 'photo', metric: 'GetPhotoMediaRequest', perDay: 30, perMinute: 10 },
   { key: 'getPlace', metric: 'GetPlaceRequest', perDay: 30, perMinute: 4 },
-  { key: 'searchText', metric: 'SearchTextRequest', perDay: 25, perMinute: 3 },
+  { key: 'searchText', metric: 'SearchTextRequest', perDay: 30, perMinute: 3 },
   { key: 'autocomplete', metric: 'AutocompletePlacesRequest', perDay: 300, perMinute: 50 },
 ]

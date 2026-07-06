@@ -9,12 +9,15 @@ import type {
 } from '@/types/models'
 import type { Region } from '@/lib/geo/region'
 import { selectCandidates, type DrawOutcome } from '@/lib/draw/engine'
+import { makeDefaultConditions } from '@/lib/draw/defaults'
 import { useSettingsStore } from './settings'
 
 export type DrawPhase = 'idle' | 'loading' | 'spinning' | 'landed'
 
 function cloneConditions(c: DrawConditions): DrawConditions {
-  return JSON.parse(JSON.stringify(c)) as DrawConditions
+  // Spread over fresh defaults so conditions persisted by an older build
+  // (missing newer keys like `keywords`) hydrate complete
+  return { ...makeDefaultConditions(), ...(JSON.parse(JSON.stringify(c)) as DrawConditions) }
 }
 
 export const useDrawStore = defineStore('draw', () => {
@@ -53,6 +56,9 @@ export const useDrawStore = defineStore('draw', () => {
   function respin() {
     const current = winner.value
     showResult.value = false
+    // The rejected winner's AI justification must not ride along onto the
+    // next one — the card falls back to a fresh per-restaurant blurb.
+    aiReason.value = null
     if (current) pool.value = pool.value.filter((r) => r.id !== current.id)
     if (pool.value.length === 0) {
       candidates.value = []

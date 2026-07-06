@@ -45,6 +45,8 @@ export interface OriginSetting {
 /** Every condition supports "Any": empty arrays / null mean unconstrained. */
 export interface DrawConditions {
   cuisines: { include: CuisineId[]; exclude: CuisineId[] }
+  /** Fine-grained tag ids (keywords.ts) — each adds one Text Search per draw */
+  keywords: string[]
   /** OR-set of acceptable price levels; empty = any */
   budgetLevels: PriceLevel[]
   radiusMeters: number

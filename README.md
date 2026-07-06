@@ -9,6 +9,7 @@ A gamified PWA that draws your lunch/dinner restaurant from conditions you set �
 ## What it does
 
 - 🎯 **Conditional draw** — each condition can be set explicitly, use your saved default, or stay "surprise me"; cuisines support include *and* exclude
+- 🥟 **Fine-grained cravings** — OpenRice-style tags Google's type system can't express (茶餐廳, 潮州菜, 點心, 火鍋, 放題, omakase…) searched as a local would type them, up to 3 per draw
 - 🎡 **Spinner UX** — up to 10 candidates on a wheel; the winner is drawn fairly (`crypto.getRandomValues`), the spin is the celebration
 - 🍽️ **Result card** — photos, star rating, price range in the local currency (HK$/MOP$/NT$…), distance, opening hours, plus one-tap **Google Maps** directions and **OpenRice** (Hong Kong/Macau)
 - 🕘 **Local history** — every accepted draw saved on-device (IndexedDB), with "don't repeat recent places" and a personal blocklist
@@ -36,7 +37,7 @@ In the console open **Google Maps Platform → Quotas**, set the dropdown to **P
 | `SearchNearbyRequest` | **30** | One search per draw, cached 24 h. 30 × 31 days stays inside even the strictest 1,000/month free tier |
 | `GetPhotoMediaRequest` | **30** | Photos load only for the winning restaurant |
 | `GetPlaceRequest` | **30** | Only used when picking a custom centre point |
-| `SearchTextRequest` | **25** | Only the free key-validation call uses this — a low cap just blunts abuse |
+| `SearchTextRequest` | **30** | Free key validation + fine-grained tag searches (one per tag per draw, cached 24 h) |
 | `AutocompletePlacesRequest` | **300** | Suggestions are free when the session ends in a details call (ours always does) |
 
 Optional extra brake — per-minute limits, so nobody can burn a day's quota in one spree: `SearchNearbyRequest` 3 · `GetPhotoMediaRequest` 10 · `GetPlaceRequest` 4 · `SearchTextRequest` 3 · `AutocompletePlacesRequest` 50.

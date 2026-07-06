@@ -11,6 +11,15 @@
 @layer base {
   html {
     -webkit-tap-highlight-color: transparent;
+    /* App-like feel: no long-press callout, no stray text selection */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  input,
+  textarea {
+    -webkit-user-select: text;
+    user-select: text;
   }
   body {
     @apply bg-orange-50 text-stone-900 antialiased dark:bg-stone-950 dark:text-stone-100;

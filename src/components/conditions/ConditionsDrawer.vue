@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import CuisineChips from './CuisineChips.vue'
+import KeywordChips from './KeywordChips.vue'
 import BudgetSelect from './BudgetSelect.vue'
 import RadiusSelect from './RadiusSelect.vue'
 import MiscToggles from './MiscToggles.vue'
@@ -23,6 +24,13 @@ const drawStore = useDrawStore()
           {{ t('conditions.cuisine') }}
         </h3>
         <CuisineChips />
+      </section>
+
+      <section>
+        <h3 class="mb-2 text-sm font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400">
+          {{ t('conditions.keywords') }}
+        </h3>
+        <KeywordChips />
       </section>
 
       <section>

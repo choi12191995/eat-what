@@ -1,5 +1,10 @@
 import type { LatLng, PlaceSuggestion, Restaurant } from '@/types/models'
-import type { AutocompleteParams, PlacesProvider, SearchNearbyParams } from './provider'
+import type {
+  AutocompleteParams,
+  PlacesProvider,
+  SearchNearbyParams,
+  SearchTextParams,
+} from './provider'
 import { RESOLVE_LOCATION_MASK, WHEEL_MASK } from './fieldMasks'
 import { normalizePlace, type GooglePlace } from './normalize'
 
@@ -92,6 +97,34 @@ export function createGooglePlacesProvider(getKey: () => string): PlacesProvider
           ...(p.excludedTypes?.length ? { excludedTypes: p.excludedTypes } : {}),
           maxResultCount: Math.min(p.maxResults ?? 20, 20),
           rankPreference: 'POPULARITY',
+          languageCode: p.languageCode,
+          ...(p.regionCode ? { regionCode: p.regionCode } : {}),
+        },
+        WHEEL_MASK,
+        signal,
+      )
+      return (data.places ?? [])
+        .map((place) => normalizePlace(place))
+        .filter((r): r is Restaurant => r !== null)
+    },
+
+    async searchText(p: SearchTextParams, signal?: AbortSignal): Promise<Restaurant[]> {
+      // Same WHEEL_MASK as Nearby → same Enterprise billing bucket, but a
+      // separate quota metric (SearchTextRequest) — reflected in the setup
+      // guide's caps. locationBias (not restriction): fine-tag places just
+      // outside the circle are still useful; the engine re-checks distance.
+      const data = await post<{ places?: GooglePlace[] }>(
+        '/places:searchText',
+        getKey(),
+        {
+          textQuery: p.query,
+          locationBias: {
+            circle: {
+              center: { latitude: p.origin.lat, longitude: p.origin.lng },
+              radius: p.radiusMeters,
+            },
+          },
+          pageSize: Math.min(p.maxResults ?? 20, 20),
           languageCode: p.languageCode,
           ...(p.regionCode ? { regionCode: p.regionCode } : {}),
         },
