@@ -3,16 +3,31 @@
  * `room:*` KV entries with a 1-hour TTL). Only candidate names/emoji/links
  * leave the device; vetoes are anonymous ids minted per browser.
  */
-import type { Restaurant } from '@/types/models'
+import type { PriceLevel, Restaurant } from '@/types/models'
 import { buildGoogleMapsUrl } from '@/lib/links/gmaps'
 import { emojiForTypes } from '@/lib/places/cuisines'
 import { PUSH_SERVER_URL } from '@/lib/push/config'
+
+/** Enough of a Restaurant to save a group winner into local history */
+export interface SlimRestaurant {
+  id: string
+  name: string
+  location: { lat: number; lng: number }
+  types: string[]
+  rating?: number
+  userRatingCount?: number
+  priceLevel?: PriceLevel
+  address?: string
+  googleMapsUri?: string
+}
 
 export interface RoomCandidate {
   id: string
   name: string
   emoji: string
   mapsUrl?: string
+  /** Absent in rooms created by older builds */
+  r?: SlimRestaurant
 }
 
 export interface RoomView {
@@ -68,6 +83,18 @@ export async function createRoom(
       name: r.name,
       emoji: emojiForTypes(r.types),
       mapsUrl: buildGoogleMapsUrl(r),
+      // Slim snapshot so any participant can save the winner to history
+      r: {
+        id: r.id,
+        name: r.name,
+        location: r.location,
+        types: r.types.slice(0, 10),
+        rating: r.rating,
+        userRatingCount: r.userRatingCount,
+        priceLevel: r.priceLevel,
+        address: r.address,
+        googleMapsUri: r.googleMapsUri,
+      },
     })),
   }
   const created = await request<{ roomId: string; hostToken: string }>('/room', {

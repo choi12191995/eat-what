@@ -43,6 +43,12 @@
       "applied": "Applied {n} filter(s) — check below!",
       "failed": "Couldn't understand that — try rephrasing?"
     },
+    "presets": {
+      "save": "Save preset",
+      "placeholder": "Name it… e.g. Work lunch",
+      "confirm": "Save",
+      "remove": "Delete preset"
+    },
     "keywords": "Craving something specific?",
     "keywordHint": "Pick up to {max} — each searches Google like a local would (cha chaan teng, hot pot, dim sum…).",
     "budget": "Budget (per person)",
@@ -126,6 +132,8 @@
     "finalSpin": "FINAL DRAW 🎲",
     "winner": "The group has decided!",
     "share": "Share room link",
+    "addToHistory": "Add to my history",
+    "savedToHistory": "In your history",
     "expired": "This room has expired or doesn't exist. Rooms live for 1 hour.",
     "createFailed": "Couldn't create the room — try again.",
     "needMore": "Not enough matches for a group draw — loosen a filter."
@@ -195,6 +203,8 @@
     "lunch": "Lunch",
     "dinner": "Dinner",
     "topCuisines": "Your favourites",
+    "delete": "Delete",
+    "groupBadge": "From a friends draw",
     "statTotal": "meals decided",
     "statPlaces": "places tried",
     "statStreak": "day streak"

@@ -9,11 +9,26 @@
  * exposed on reads, room self-destructs after 1 hour via alarm.
  */
 
+/** Enough of a Restaurant for a participant to save the winner to history */
+export interface SlimRestaurant {
+  id: string
+  name: string
+  location: { lat: number; lng: number }
+  types: string[]
+  rating?: number
+  userRatingCount?: number
+  priceLevel?: number
+  address?: string
+  googleMapsUri?: string
+}
+
 export interface RoomCandidate {
   id: string
   name: string
   emoji: string
   mapsUrl?: string
+  /** Snapshot for "add to my history" — absent in rooms from older builds */
+  r?: SlimRestaurant
 }
 
 export interface Room {
@@ -39,6 +54,38 @@ export function isRoomId(id: string): boolean {
   return /^[A-Za-z0-9]{6}$/.test(id)
 }
 
+function slimRestaurant(v: unknown): SlimRestaurant | undefined {
+  const r = v as Record<string, unknown> | null
+  const loc = r?.location as Record<string, unknown> | undefined
+  if (
+    typeof r?.id !== 'string' ||
+    typeof r?.name !== 'string' ||
+    typeof loc?.lat !== 'number' ||
+    typeof loc?.lng !== 'number'
+  ) {
+    return undefined
+  }
+  return {
+    id: r.id.slice(0, 300),
+    name: r.name.slice(0, 200),
+    location: { lat: loc.lat, lng: loc.lng },
+    types: Array.isArray(r.types)
+      ? r.types.filter((t): t is string => typeof t === 'string').slice(0, 10)
+      : [],
+    rating: typeof r.rating === 'number' ? r.rating : undefined,
+    userRatingCount: typeof r.userRatingCount === 'number' ? r.userRatingCount : undefined,
+    priceLevel:
+      typeof r.priceLevel === 'number' && r.priceLevel >= 1 && r.priceLevel <= 4
+        ? r.priceLevel
+        : undefined,
+    address: typeof r.address === 'string' ? r.address.slice(0, 200) : undefined,
+    googleMapsUri:
+      typeof r.googleMapsUri === 'string' && r.googleMapsUri.startsWith('https://')
+        ? r.googleMapsUri
+        : undefined,
+  }
+}
+
 function parseCandidates(v: unknown): RoomCandidate[] | null {
   if (!Array.isArray(v) || v.length < 2 || v.length > 10) return null
   const out: RoomCandidate[] = []
@@ -52,6 +99,7 @@ function parseCandidates(v: unknown): RoomCandidate[] | null {
       emoji: typeof c.emoji === 'string' ? c.emoji.slice(0, 8) : '🍽️',
       mapsUrl:
         typeof c.mapsUrl === 'string' && c.mapsUrl.startsWith('https://') ? c.mapsUrl : undefined,
+      r: slimRestaurant(c.r),
     })
   }
   return out

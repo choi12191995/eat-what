@@ -86,6 +86,11 @@ export const useDrawStore = defineStore('draw', () => {
     conditions.value = cloneConditions(settings.defaultConditions)
   }
 
+  /** Replace conditions wholesale (presets) — clone-merged for forward compat. */
+  function applyConditions(c: DrawConditions) {
+    conditions.value = cloneConditions(c)
+  }
+
   return {
     phase,
     conditions,
@@ -106,5 +111,6 @@ export const useDrawStore = defineStore('draw', () => {
     acceptWinner,
     saveConditionsAsDefault,
     resetConditions,
+    applyConditions,
   }
 })

@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import type { Restaurant } from '@/types/models'
 import ResultCard from '@/components/result/ResultCard.vue'
+import SwipeToDelete from '@/components/ui/SwipeToDelete.vue'
 import { createHistoryRepo, type DayGroup } from '@/lib/db/historyRepo'
 import { getDb } from '@/lib/db/schema'
 import { emojiForTypes } from '@/lib/places/cuisines'
@@ -40,6 +41,15 @@ function timeLabel(ts: number): string {
 function openRecord(r: Restaurant) {
   selected.value = r
   cardOpen.value = true
+}
+
+// Swipe-to-delete: one open row at a time, iOS style
+const openRowId = ref<number | null>(null)
+async function removeRecord(id: number | undefined) {
+  if (id === undefined) return
+  await repo.remove(id)
+  openRowId.value = null
+  await load()
 }
 </script>
 
@@ -96,23 +106,37 @@ function openRecord(r: Restaurant) {
       </h2>
       <ul class="space-y-2">
         <li v-for="rec in g.records" :key="rec.id">
-          <button
-            type="button"
-            class="flex w-full items-center gap-3 rounded-2xl border border-stone-200 px-3 py-2.5 text-left active:scale-[0.99] dark:border-stone-800"
-            @click="openRecord(rec.restaurant)"
+          <SwipeToDelete
+            :open="openRowId === rec.id"
+            :label="t('history.delete')"
+            @update:open="openRowId = $event ? (rec.id ?? null) : null"
+            @delete="removeRecord(rec.id)"
           >
-            <span class="text-2xl" aria-hidden="true">{{ emojiForTypes(rec.restaurant.types) }}</span>
-            <span class="min-w-0 flex-1">
-              <span class="block truncate text-sm font-semibold">{{ rec.restaurant.name }}</span>
-              <span class="block text-xs text-stone-400 dark:text-stone-500">
-                {{ rec.meal === 'lunch' ? '🥪' : '🌙' }} {{ t(`history.${rec.meal}`) }} ·
-                {{ timeLabel(rec.timestamp) }}
+            <button
+              type="button"
+              class="flex w-full items-center gap-3 rounded-2xl border border-stone-200 bg-orange-50 px-3 py-2.5 text-left active:scale-[0.99] dark:border-stone-800 dark:bg-stone-950"
+              @click="openRecord(rec.restaurant)"
+            >
+              <span class="text-2xl" aria-hidden="true">{{ emojiForTypes(rec.restaurant.types) }}</span>
+              <span class="min-w-0 flex-1">
+                <span class="block truncate text-sm font-semibold">{{ rec.restaurant.name }}</span>
+                <span class="block text-xs text-stone-400 dark:text-stone-500">
+                  {{ rec.meal === 'lunch' ? '🥪' : '🌙' }} {{ t(`history.${rec.meal}`) }} ·
+                  {{ timeLabel(rec.timestamp) }}
+                </span>
               </span>
-            </span>
-            <span v-if="rec.restaurant.rating" class="text-xs text-stone-400">
-              ★ {{ rec.restaurant.rating.toFixed(1) }}
-            </span>
-          </button>
+              <span
+                v-if="rec.source === 'group'"
+                class="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700 dark:bg-violet-950 dark:text-violet-300"
+                :title="t('history.groupBadge')"
+              >
+                👥
+              </span>
+              <span v-if="rec.restaurant.rating" class="text-xs text-stone-400">
+                ★ {{ rec.restaurant.rating.toFixed(1) }}
+              </span>
+            </button>
+          </SwipeToDelete>
         </li>
       </ul>
     </section>

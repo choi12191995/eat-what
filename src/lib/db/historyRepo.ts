@@ -21,7 +21,11 @@ function dayKey(ts: number): string {
 
 export function createHistoryRepo(db: EatWhatDB, now: () => number = Date.now) {
   return {
-    async addAccepted(restaurant: Restaurant, conditions: DrawConditions): Promise<void> {
+    async addAccepted(
+      restaurant: Restaurant,
+      conditions: DrawConditions,
+      source?: 'group',
+    ): Promise<void> {
       const ts = now()
       await db.draws.add({
         timestamp: ts,
@@ -29,7 +33,12 @@ export function createHistoryRepo(db: EatWhatDB, now: () => number = Date.now) {
         conditions: JSON.parse(JSON.stringify(conditions)) as DrawConditions,
         restaurant: JSON.parse(JSON.stringify(restaurant)) as Restaurant,
         action: 'accepted',
+        ...(source ? { source } : {}),
       })
+    },
+
+    async remove(id: number): Promise<void> {
+      await db.draws.delete(id)
     },
 
     async listGroupedByDay(limit = 200): Promise<DayGroup[]> {

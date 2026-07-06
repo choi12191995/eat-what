@@ -287,7 +287,8 @@ export default {
     // gives read-your-writes consistency that KV's 60 s edge cache cannot
     if (url.pathname === '/room' && request.method === 'POST') {
       const bodyText = await request.text()
-      if (!bodyText || bodyText.length > MAX_BODY_BYTES) return json({ error: 'bad request' }, 400)
+      // Larger cap than other routes: candidates carry restaurant snapshots
+      if (!bodyText || bodyText.length > 32_768) return json({ error: 'bad request' }, 400)
       const roomId = newRoomId()
       const stub = env.ROOMS.get(env.ROOMS.idFromName(roomId))
       const res = await stub.fetch('https://room/create', {

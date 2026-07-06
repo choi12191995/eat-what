@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import confetti from 'canvas-confetti'
 
+import type { Restaurant } from '@/types/models'
 import {
   fetchRoom,
   hostToken,
@@ -14,6 +15,9 @@ import {
   type RoomView,
 } from '@/lib/rooms/client'
 import { cryptoRandomInt } from '@/lib/draw/random'
+import { makeDefaultConditions } from '@/lib/draw/defaults'
+import { createHistoryRepo } from '@/lib/db/historyRepo'
+import { getDb } from '@/lib/db/schema'
 import { useHaptics } from '@/composables/useHaptics'
 
 const { t } = useI18n()
@@ -89,6 +93,21 @@ async function finalDraw() {
   spinning.value = false
 }
 
+// "Add to my history" — works for host AND friends via the room's snapshot
+const saveState = ref<'idle' | 'saved'>('idle')
+async function addToHistory() {
+  const snap = winner.value?.r
+  if (!snap || saveState.value === 'saved') return
+  const restaurant: Restaurant = { ...snap, photoNames: [], fetchedAt: Date.now() }
+  try {
+    await createHistoryRepo(getDb()).addAccepted(restaurant, makeDefaultConditions(), 'group')
+    saveState.value = 'saved'
+    haptics.tap()
+  } catch {
+    // history is best-effort
+  }
+}
+
 async function shareRoom() {
   const url = roomUrl(roomId.value)
   if (navigator.share) {
@@ -129,15 +148,26 @@ async function shareRoom() {
         </p>
         <p class="mt-2 text-4xl" aria-hidden="true">{{ winner.emoji }}</p>
         <p class="mt-1 text-2xl font-black">{{ winner.name }}</p>
-        <a
-          v-if="winner.mapsUrl"
-          :href="winner.mapsUrl"
-          target="_blank"
-          rel="noopener"
-          class="mt-3 inline-block rounded-full border border-stone-300 px-4 py-1.5 text-sm font-semibold text-stone-600 dark:border-stone-700 dark:text-stone-300"
-        >
-          🗺️ {{ t('result.openInMaps') }}
-        </a>
+        <div class="mt-3 flex flex-wrap justify-center gap-2">
+          <a
+            v-if="winner.mapsUrl"
+            :href="winner.mapsUrl"
+            target="_blank"
+            rel="noopener"
+            class="rounded-full border border-stone-300 px-4 py-1.5 text-sm font-semibold text-stone-600 dark:border-stone-700 dark:text-stone-300"
+          >
+            🗺️ {{ t('result.openInMaps') }}
+          </a>
+          <button
+            v-if="winner.r"
+            type="button"
+            class="rounded-full bg-orange-500 px-4 py-1.5 text-sm font-bold text-white active:scale-95 disabled:opacity-70"
+            :disabled="saveState === 'saved'"
+            @click="addToHistory"
+          >
+            {{ saveState === 'saved' ? '✅ ' + t('room.savedToHistory') : '😋 ' + t('room.addToHistory') }}
+          </button>
+        </div>
       </div>
 
       <template v-else>

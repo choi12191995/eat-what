@@ -73,6 +73,13 @@ export interface DrawConditions {
 
 export type DrawStyle = 'uniform' | 'favor' | 'explore'
 
+/** A saved conditions bundle with a user-chosen label ("公司午餐"…) */
+export interface ConditionPreset {
+  id: string
+  label: string
+  conditions: DrawConditions
+}
+
 export type DrawAction = 'accepted' | 'respun'
 
 export interface DrawRecord {
@@ -82,6 +89,8 @@ export interface DrawRecord {
   conditions: DrawConditions
   restaurant: Restaurant
   action: DrawAction
+  /** 'group' = accepted from a friends-draw room; absent = solo draw */
+  source?: 'group'
 }
 
 export type RelaxationKind =

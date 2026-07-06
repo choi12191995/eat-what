@@ -43,6 +43,12 @@
       "applied": "已套用 {n} 項條件——睇下下面！",
       "failed": "聽唔明——換個講法再試？"
     },
+    "presets": {
+      "save": "儲存組合",
+      "placeholder": "改個名…例：公司午餐",
+      "confirm": "儲存",
+      "remove": "刪除組合"
+    },
     "keywords": "想食啲特定嘢？",
     "keywordHint": "最多揀 {max} 個——每個都會像本地人一樣搜尋 Google（茶餐廳、火鍋、點心…）。",
     "budget": "預算（每人）",
@@ -126,6 +132,8 @@
     "finalSpin": "最終抽選 🎲",
     "winner": "大家決定咗喇！",
     "share": "分享房間連結",
+    "addToHistory": "加入我嘅紀錄",
+    "savedToHistory": "已喺紀錄入面",
     "expired": "房間已過期或唔存在。房間有效期為 1 小時。",
     "createFailed": "開唔到房間——請再試一次。",
     "needMore": "符合嘅餐廳唔夠開房——放寬啲條件先。"
@@ -195,6 +203,8 @@
     "lunch": "午餐",
     "dinner": "晚餐",
     "topCuisines": "你的最愛",
+    "delete": "刪除",
+    "groupBadge": "朋友一齊抽嘅結果",
     "statTotal": "餐已決定",
     "statPlaces": "間食過",
     "statStreak": "天連續"
