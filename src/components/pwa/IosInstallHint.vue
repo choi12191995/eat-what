@@ -23,7 +23,7 @@ function dismiss() {
 <template>
   <div
     v-if="show"
-    class="fixed inset-x-4 bottom-20 z-40 mx-auto max-w-sm rounded-2xl border border-orange-200 bg-white p-4 shadow-xl dark:border-stone-700 dark:bg-stone-900"
+    class="fixed inset-x-4 bottom-28 z-40 mx-auto max-w-sm rounded-2xl border border-orange-200 bg-white p-4 shadow-xl dark:border-stone-700 dark:bg-stone-900"
   >
     <p class="text-sm font-semibold">📲 {{ t('pwa.iosTitle') }}</p>
     <p class="mt-1 text-xs text-stone-500 dark:text-stone-400">{{ t('pwa.iosHint') }}</p>

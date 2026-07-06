@@ -29,7 +29,7 @@ watchEffect(() => {
 
 <template>
   <div class="flex min-h-dvh flex-col">
-    <main class="flex-1 pb-24">
+    <main class="flex-1 pb-32">
       <RouterView />
     </main>
     <TabBar />
