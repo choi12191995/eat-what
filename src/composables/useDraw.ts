@@ -135,6 +135,9 @@ export function useDraw() {
       case 'dropOpenNow':
         cond.openNowOnly = false
         break
+      case 'dropArriveAt':
+        cond.arriveAt = null
+        break
       case 'dropMinRating':
         cond.minRating = null
         break

@@ -32,6 +32,8 @@ export interface CronHealth {
 
 export interface Env {
   SUBS: KVNamespace
+  /** Group-draw rooms — one strongly-consistent Durable Object per room */
+  ROOMS: DurableObjectNamespace
   VAPID_PUBLIC_KEY: string
   VAPID_SUBJECT: string
   /** Worker secret — set via `wrangler secret put VAPID_PRIVATE_KEY` */

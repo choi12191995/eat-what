@@ -14,6 +14,12 @@ export type PriceLevel = 1 | 2 | 3 | 4
 
 export type BusinessStatus = 'OPERATIONAL' | 'CLOSED_TEMPORARILY' | 'CLOSED_PERMANENTLY'
 
+/** One opening interval; close missing = open 24 h. Days are JS 0=Sun…6=Sat. */
+export interface OpenPeriod {
+  open: { day: number; hour: number; minute: number }
+  close?: { day: number; hour: number; minute: number }
+}
+
 /**
  * Provider-agnostic restaurant shape. This exact object is snapshotted into
  * draw history, so keep it JSON-serializable and additive-only.
@@ -31,6 +37,8 @@ export interface Restaurant {
   priceRange?: { start?: MoneyLite; end?: MoneyLite }
   openNow?: boolean
   todayHours?: string
+  /** Structured hours for the next week — drives the arrive-at filter */
+  openPeriods?: OpenPeriod[]
   photoNames: string[]
   googleMapsUri?: string
   businessStatus?: BusinessStatus
@@ -54,6 +62,8 @@ export interface DrawConditions {
   /** Metadata + AI hint only — Places cannot filter on it */
   partySize: number
   openNowOnly: boolean
+  /** "HH:mm" today — only places open at that time pass (openNowOnly off) */
+  arriveAt: string | null
   minRating: number | null
   /** Don't suggest places accepted within the last N days; null = off */
   excludeRecentDays: number | null
@@ -76,6 +86,7 @@ export interface DrawRecord {
 
 export type RelaxationKind =
   | 'dropOpenNow'
+  | 'dropArriveAt'
   | 'dropMinRating'
   | 'dropBudget'
   | 'dropRecentExclusion'

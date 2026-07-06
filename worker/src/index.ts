@@ -9,9 +9,12 @@
 import { buildPushPayload } from '@block65/webcrypto-web-push'
 
 import { mealCopy, testCopy, type NotificationCopy } from './copy'
-import { applyVeto, createRoom, getRoom, publicRoom, setResult } from './rooms'
+import { isRoomId, newRoomId } from './rooms'
 import { dueMeals, localParts, parseTime, type MealPref, type MealPrefs } from './schedule'
 import type { CronHealth, Env, StoredSubscription } from './types'
+
+// The Durable Object class must be exported from the worker entry module
+export { RoomDO } from './rooms'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -280,32 +283,41 @@ export default {
       return handleTest(request, env)
     }
 
-    // Group-draw rooms
+    // Group-draw rooms — proxied to one Durable Object per room id; the DO
+    // gives read-your-writes consistency that KV's 60 s edge cache cannot
     if (url.pathname === '/room' && request.method === 'POST') {
-      const body = await readBody(request)
-      if (!body) return json({ error: 'bad request' }, 400)
-      const { status, payload } = await createRoom(env, body)
-      return json(payload, status)
+      const bodyText = await request.text()
+      if (!bodyText || bodyText.length > MAX_BODY_BYTES) return json({ error: 'bad request' }, 400)
+      const roomId = newRoomId()
+      const stub = env.ROOMS.get(env.ROOMS.idFromName(roomId))
+      const res = await stub.fetch('https://room/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: bodyText,
+      })
+      const payload = (await res.json()) as Record<string, unknown>
+      return res.ok ? json({ roomId, ...payload }) : json(payload, res.status)
     }
     const roomMatch = /^\/room\/([A-Za-z0-9]{6})(\/(veto|result))?$/.exec(url.pathname)
-    if (roomMatch) {
-      const id = roomMatch[1]!
+    if (roomMatch && isRoomId(roomMatch[1]!)) {
+      const id = roomMatch[1]!.toUpperCase()
       const action = roomMatch[3]
+      const stub = env.ROOMS.get(env.ROOMS.idFromName(id))
       if (!action && request.method === 'GET') {
-        const room = await getRoom(env, id)
-        return room ? json(publicRoom(room)) : json({ error: 'room not found' }, 404)
+        const res = await stub.fetch('https://room/')
+        return json(await res.json(), res.status)
       }
-      if (request.method === 'POST') {
-        const body = await readBody(request)
-        if (!body) return json({ error: 'bad request' }, 400)
-        if (action === 'veto') {
-          const { status, payload } = await applyVeto(env, id, body)
-          return json(payload, status)
+      if (action && request.method === 'POST') {
+        const bodyText = await request.text()
+        if (!bodyText || bodyText.length > MAX_BODY_BYTES) {
+          return json({ error: 'bad request' }, 400)
         }
-        if (action === 'result') {
-          const { status, payload } = await setResult(env, id, body)
-          return json(payload, status)
-        }
+        const res = await stub.fetch(`https://room/${action}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: bodyText,
+        })
+        return json(await res.json(), res.status)
       }
     }
 

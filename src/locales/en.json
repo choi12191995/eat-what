@@ -25,6 +25,7 @@
     "noMatchesRelax": "No matches — loosen one condition?",
     "relax": {
       "dropOpenNow": "Include closed-now places",
+      "dropArriveAt": "Ignore the arrival time",
       "dropMinRating": "Drop the rating filter",
       "dropBudget": "Any budget",
       "dropRecentExclusion": "Allow recent places",
@@ -35,6 +36,13 @@
     "title": "Draw conditions",
     "cuisine": "Cuisine",
     "cuisineHint": "Tap once to include ✓, twice to exclude ✕, three times to clear.",
+    "voice": {
+      "placeholder": "Tell the AI what you feel like… 🎙️",
+      "mic": "Speak your craving",
+      "listening": "Listening…",
+      "applied": "Applied {n} filter(s) — check below!",
+      "failed": "Couldn't understand that — try rephrasing?"
+    },
     "keywords": "Craving something specific?",
     "keywordHint": "Pick up to {max} — each searches Google like a local would (cha chaan teng, hot pot, dim sum…).",
     "budget": "Budget (per person)",
@@ -45,6 +53,7 @@
     "originSearchPlaceholder": "Search a place or area…",
     "more": "More",
     "openNow": "Open now only",
+    "arriveAt": "Arriving at (today)",
     "minRating": "Min rating",
     "partySize": "Party size",
     "noRepeat": "Skip recent picks",

@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import CuisineChips from './CuisineChips.vue'
 import KeywordChips from './KeywordChips.vue'
+import VoiceConditions from './VoiceConditions.vue'
 import BudgetSelect from './BudgetSelect.vue'
 import RadiusSelect from './RadiusSelect.vue'
 import MiscToggles from './MiscToggles.vue'
@@ -18,6 +19,8 @@ const drawStore = useDrawStore()
   <BottomSheet :open="drawStore.drawerOpen" @close="drawStore.drawerOpen = false">
     <div class="space-y-6 px-6 pt-1 pb-4">
       <h2 class="text-lg font-bold">{{ t('conditions.title') }}</h2>
+
+      <VoiceConditions />
 
       <section>
         <h3 class="mb-2 text-sm font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400">

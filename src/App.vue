@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { onMounted, watchEffect } from 'vue'
+import { onMounted, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import { usePreferredDark } from '@vueuse/core'
 
 import TabBar from '@/components/ui/TabBar.vue'
@@ -12,9 +13,21 @@ import { useSettingsStore } from '@/stores/settings'
 const settings = useSettingsStore()
 const systemDark = usePreferredDark()
 const { locale } = useI18n()
+const route = useRoute()
+
+// First-run onboarding — but never ambush a friend who just followed a
+// group-draw link: only auto-open on the home tab
+watch(
+  () => route.name,
+  (name) => {
+    if (name === 'home' && !settings.googleApiKey && !settings.setupDismissed) {
+      settings.setupOpen = true
+    }
+  },
+  { immediate: true },
+)
 
 onMounted(() => {
-  if (!settings.googleApiKey && !settings.setupDismissed) settings.setupOpen = true
 
   // Re-register the push subscription on every open/resume: iOS can rotate
   // or drop endpoints (e.g. across app updates), and the server prunes dead

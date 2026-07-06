@@ -30,8 +30,9 @@ describe('detectRegion', () => {
     expect(detectRegion({ lat: 22.2819, lng: 114.158 })).toBe('HK')
     expect(detectRegion({ lat: 22.19, lng: 113.55 })).toBe('MO')
     expect(detectRegion({ lat: 25.033, lng: 121.565 })).toBe('TW')
-    expect(detectRegion({ lat: 35.68, lng: 139.76 })).toBe('OTHER')
-    expect(detectRegion({ lat: 35.68, lng: 139.76 }, 'HK')).toBe('HK')
+    expect(detectRegion({ lat: 35.68, lng: 139.76 })).toBe('JP') // Tokyo
+    expect(detectRegion({ lat: 51.5, lng: -0.12 })).toBe('OTHER') // London
+    expect(detectRegion({ lat: 51.5, lng: -0.12 }, 'HK')).toBe('HK')
   })
 })
 

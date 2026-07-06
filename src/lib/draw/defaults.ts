@@ -15,6 +15,7 @@ export function makeDefaultConditions(): DrawConditions {
     origin: { mode: 'gps' },
     partySize: 2,
     openNowOnly: true,
+    arriveAt: null,
     minRating: null,
     excludeRecentDays: null,
     drawStyle: 'uniform',

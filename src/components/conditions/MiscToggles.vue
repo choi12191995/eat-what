@@ -57,6 +57,37 @@ function bumpParty(delta: number) {
       </button>
     </div>
 
+    <!-- arrive at (pre-draw for later; only meaningful when openNow is off) -->
+    <div v-if="!drawStore.conditions.openNowOnly" class="flex items-center justify-between gap-3">
+      <span class="shrink-0 text-sm">{{ t('conditions.arriveAt') }}</span>
+      <div class="flex items-center gap-1.5">
+        <button
+          type="button"
+          class="rounded-full border px-2.5 py-1 text-xs transition-all"
+          :class="
+            drawStore.conditions.arriveAt === null
+              ? 'border-orange-500 bg-orange-500/10 font-semibold text-orange-600 dark:text-orange-400'
+              : 'border-stone-300 text-stone-500 dark:border-stone-700 dark:text-stone-400'
+          "
+          @click="drawStore.conditions.arriveAt = null"
+        >
+          {{ t('conditions.any') }}
+        </button>
+        <input
+          :value="drawStore.conditions.arriveAt ?? ''"
+          type="time"
+          step="900"
+          class="rounded-lg border bg-transparent px-2 py-1 text-sm font-semibold"
+          :class="
+            drawStore.conditions.arriveAt !== null
+              ? 'border-orange-500 text-orange-600 dark:text-orange-400'
+              : 'border-stone-300 text-stone-500 dark:border-stone-700 dark:text-stone-400'
+          "
+          @change="drawStore.conditions.arriveAt = ($event.target as HTMLInputElement).value || null"
+        />
+      </div>
+    </div>
+
     <!-- min rating -->
     <div class="flex items-center justify-between gap-3">
       <span class="shrink-0 text-sm">{{ t('conditions.minRating') }}</span>

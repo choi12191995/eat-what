@@ -1,10 +1,13 @@
 /**
- * Group-draw rooms: the host shares their wheel candidates, each friend
- * gets ONE veto, the host runs the final draw. Rooms live in the same KV
- * as push subscriptions under `room:` keys with a 1-hour TTL — no accounts,
- * no PII, just restaurant names that are public data anyway.
+ * Group-draw rooms as a Durable Object — one strongly-consistent instance
+ * per room. Rooms originally lived in KV, but KV caches reads at the edge
+ * for a minimum of 60 s, so pollers watched stale state for up to a minute
+ * (field-verified). A DO has no read cache: every GET sees the last write,
+ * and latency collapses to the client's poll interval.
+ *
+ * Privacy unchanged: candidate names/emoji/links only, host token never
+ * exposed on reads, room self-destructs after 1 hour via alarm.
  */
-import type { Env } from './types'
 
 export interface RoomCandidate {
   id: string
@@ -23,17 +26,17 @@ export interface Room {
   createdAt: string
 }
 
-const ROOM_TTL_SECONDS = 60 * 60
+const ROOM_TTL_MS = 60 * 60 * 1000
 const ID_ALPHABET = 'ABCDEFGHJKMNPQRSTVWXYZ23456789' // no 0/O/1/I/L
 
-export function roomKey(id: string): string {
-  return `room:${id.toUpperCase()}`
-}
-
-function newRoomId(): string {
+export function newRoomId(): string {
   const buf = new Uint8Array(6)
   crypto.getRandomValues(buf)
   return [...buf].map((b) => ID_ALPHABET[b % ID_ALPHABET.length]).join('')
+}
+
+export function isRoomId(id: string): boolean {
+  return /^[A-Za-z0-9]{6}$/.test(id)
 }
 
 function parseCandidates(v: unknown): RoomCandidate[] | null {
@@ -55,7 +58,7 @@ function parseCandidates(v: unknown): RoomCandidate[] | null {
 }
 
 /** Public view: everything except the host token. */
-export function publicRoom(room: Room): Omit<Room, 'hostToken'> {
+function publicRoom(room: Room): Omit<Room, 'hostToken'> {
   return {
     candidates: room.candidates,
     vetoes: room.vetoes,
@@ -65,70 +68,81 @@ export function publicRoom(room: Room): Omit<Room, 'hostToken'> {
   }
 }
 
-export async function createRoom(
-  env: Env,
-  body: Record<string, unknown>,
-): Promise<{ status: number; payload: unknown }> {
-  const candidates = parseCandidates(body.candidates)
-  if (!candidates) return { status: 400, payload: { error: 'invalid candidates' } }
-  const roomId = newRoomId()
-  const room: Room = {
-    candidates,
-    vetoes: {},
-    result: null,
-    hostToken: crypto.randomUUID(),
-    locale: body.locale === 'zh-TW' ? 'zh-TW' : 'en',
-    createdAt: new Date().toISOString(),
-  }
-  await env.SUBS.put(roomKey(roomId), JSON.stringify(room), { expirationTtl: ROOM_TTL_SECONDS })
-  return { status: 200, payload: { roomId, hostToken: room.hostToken } }
+function reply(payload: unknown, status = 200): Response {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  })
 }
 
-export async function getRoom(env: Env, id: string): Promise<Room | null> {
-  if (!/^[A-Za-z0-9]{6}$/.test(id)) return null
-  return env.SUBS.get<Room>(roomKey(id), 'json')
-}
+export class RoomDO {
+  constructor(private readonly state: DurableObjectState) {}
 
-export async function applyVeto(
-  env: Env,
-  id: string,
-  body: Record<string, unknown>,
-): Promise<{ status: number; payload: unknown }> {
-  const room = await getRoom(env, id)
-  if (!room) return { status: 404, payload: { error: 'room not found' } }
-  const { placeId, voterId } = body
-  if (typeof placeId !== 'string' || typeof voterId !== 'string' || voterId.length > 64) {
-    return { status: 400, payload: { error: 'bad request' } }
-  }
-  if (room.result) return { status: 409, payload: { error: 'already drawn' } }
-  if (!room.candidates.some((c) => c.id === placeId)) {
-    return { status: 400, payload: { error: 'unknown candidate' } }
-  }
-  const alreadyVetoedBy = Object.values(room.vetoes).includes(voterId)
-  const vetoCount = Object.keys(room.vetoes).length
-  // One veto per person, and at least one candidate must survive
-  if (!alreadyVetoedBy && vetoCount < room.candidates.length - 1 && !room.vetoes[placeId]) {
-    room.vetoes[placeId] = voterId
-    await env.SUBS.put(roomKey(id), JSON.stringify(room), { expirationTtl: ROOM_TTL_SECONDS })
-  }
-  return { status: 200, payload: publicRoom(room) }
-}
+  async fetch(request: Request): Promise<Response> {
+    const url = new URL(request.url)
+    const room = await this.state.storage.get<Room>('room')
 
-export async function setResult(
-  env: Env,
-  id: string,
-  body: Record<string, unknown>,
-): Promise<{ status: number; payload: unknown }> {
-  const room = await getRoom(env, id)
-  if (!room) return { status: 404, payload: { error: 'room not found' } }
-  const { hostToken, placeId } = body
-  if (hostToken !== room.hostToken) return { status: 403, payload: { error: 'not the host' } }
-  if (typeof placeId !== 'string' || !room.candidates.some((c) => c.id === placeId)) {
-    return { status: 400, payload: { error: 'unknown candidate' } }
+    if (request.method === 'POST' && url.pathname === '/create') {
+      if (room) return reply({ error: 'room already exists' }, 409)
+      const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
+      const candidates = parseCandidates(body?.candidates)
+      if (!candidates) return reply({ error: 'invalid candidates' }, 400)
+      const created: Room = {
+        candidates,
+        vetoes: {},
+        result: null,
+        hostToken: crypto.randomUUID(),
+        locale: body?.locale === 'zh-TW' ? 'zh-TW' : 'en',
+        createdAt: new Date().toISOString(),
+      }
+      await this.state.storage.put('room', created)
+      await this.state.storage.setAlarm(Date.now() + ROOM_TTL_MS)
+      return reply({ hostToken: created.hostToken })
+    }
+
+    if (!room) return reply({ error: 'room not found' }, 404)
+
+    if (request.method === 'GET') return reply(publicRoom(room))
+
+    if (request.method === 'POST' && url.pathname === '/veto') {
+      const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
+      const placeId = body?.placeId
+      const voterId = body?.voterId
+      if (typeof placeId !== 'string' || typeof voterId !== 'string' || voterId.length > 64) {
+        return reply({ error: 'bad request' }, 400)
+      }
+      if (room.result) return reply({ error: 'already drawn' }, 409)
+      if (!room.candidates.some((c) => c.id === placeId)) {
+        return reply({ error: 'unknown candidate' }, 400)
+      }
+      const alreadyVetoedBy = Object.values(room.vetoes).includes(voterId)
+      const vetoCount = Object.keys(room.vetoes).length
+      // One veto per person, and at least one candidate must survive
+      if (!alreadyVetoedBy && vetoCount < room.candidates.length - 1 && !room.vetoes[placeId]) {
+        room.vetoes[placeId] = voterId
+        await this.state.storage.put('room', room)
+      }
+      return reply(publicRoom(room))
+    }
+
+    if (request.method === 'POST' && url.pathname === '/result') {
+      const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
+      if (body?.hostToken !== room.hostToken) return reply({ error: 'not the host' }, 403)
+      const placeId = body?.placeId
+      if (typeof placeId !== 'string' || !room.candidates.some((c) => c.id === placeId)) {
+        return reply({ error: 'unknown candidate' }, 400)
+      }
+      if (!room.result) {
+        room.result = { placeId }
+        await this.state.storage.put('room', room)
+      }
+      return reply(publicRoom(room))
+    }
+
+    return reply({ error: 'not found' }, 404)
   }
-  if (!room.result) {
-    room.result = { placeId }
-    await env.SUBS.put(roomKey(id), JSON.stringify(room), { expirationTtl: ROOM_TTL_SECONDS })
+
+  async alarm(): Promise<void> {
+    await this.state.storage.deleteAll()
   }
-  return { status: 200, payload: publicRoom(room) }
 }

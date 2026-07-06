@@ -7,6 +7,8 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-07-01",
   "kv_namespaces": [{ "binding": "SUBS", "id": "d5d79400ed32429cbc00d605cbfb2329" }],
+  "durable_objects": { "bindings": [{ "name": "ROOMS", "class_name": "RoomDO" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RoomDO"] }],
   "triggers": { "crons": ["*/5 * * * *"] },
   "vars": {
     "VAPID_PUBLIC_KEY": "BE0mXKJg-sQWicgTiHLS6egp4VNj8-CgQTSjm87yO9HSISQPMHR89xynGFJj2zSbuw9o9cXxSpJzVW2T5MEJJr4",

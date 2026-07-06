@@ -61,7 +61,7 @@ onMounted(async () => {
   await refresh()
   timer = setInterval(() => {
     if (document.visibilityState === 'visible' && !room.value?.result) void refresh()
-  }, 3000)
+  }, 2000)
 })
 onBeforeUnmount(() => {
   if (timer) clearInterval(timer)

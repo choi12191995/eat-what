@@ -10,6 +10,7 @@ const BANDS: Record<Exclude<Region, 'OTHER'>, { currency: string; edges: [number
   HK: { currency: 'HKD', edges: [50, 150, 400] },
   MO: { currency: 'MOP', edges: [50, 150, 400] },
   TW: { currency: 'TWD', edges: [150, 450, 1200] },
+  JP: { currency: 'JPY', edges: [1000, 3000, 8000] },
 }
 
 const LEVEL_SYMBOLS: Record<PriceLevel, string> = { 1: '$', 2: '$$', 3: '$$$', 4: '$$$$' }

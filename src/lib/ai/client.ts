@@ -1,4 +1,9 @@
 import type { Restaurant } from '@/types/models'
+import {
+  conditionsMessages,
+  sanitizeAiConditions,
+  type AiConditionPatch,
+} from './conditionsSchema'
 import { blurbMessages, conciergeMessages } from './prompts'
 
 export interface AiConfig {
@@ -94,6 +99,18 @@ export async function conciergePick(
   }
   if (!candidates.some((c) => c.id === parsed.placeId)) return null
   return { placeId: parsed.placeId, reason: parsed.reason.slice(0, 140) }
+}
+
+/** Natural-language (spoken or typed) → sanitized condition patch. */
+export async function parseConditions(
+  cfg: AiConfig,
+  utterance: string,
+  locale: string,
+): Promise<AiConditionPatch | null> {
+  if (!aiConfigured(cfg) || !utterance.trim()) return null
+  const raw = await chat(cfg, conditionsMessages(utterance, locale))
+  if (!raw) return null
+  return sanitizeAiConditions(extractJson<Record<string, unknown>>(raw))
 }
 
 /** One-line appetizing blurb for the result card. */

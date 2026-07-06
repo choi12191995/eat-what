@@ -14,6 +14,7 @@ import { formatDistance, haversineMeters } from '@/lib/geo/distance'
 import { detectRegion } from '@/lib/geo/region'
 import { buildGoogleMapsUrl } from '@/lib/links/gmaps'
 import { buildOpenRiceUrl } from '@/lib/links/openrice'
+import { buildTabelogUrl } from '@/lib/links/tabelog'
 import { wheelColor } from '@/lib/draw/palette'
 import { getProvider } from '@/lib/places'
 import { useDraw } from '@/composables/useDraw'
@@ -73,6 +74,7 @@ const mapsUrl = computed(() => (r.value ? buildGoogleMapsUrl(r.value) : null))
 const openRiceUrl = computed(() =>
   r.value ? buildOpenRiceUrl(r.value.name, region.value, locale.value as 'en' | 'zh-TW') : null,
 )
+const tabelogUrl = computed(() => (r.value ? buildTabelogUrl(r.value.name, region.value) : null))
 
 function close() {
   if (readonly.value) emit('close')
@@ -196,6 +198,15 @@ async function shareAsImage() {
             class="rounded-full border border-stone-300 px-3 py-1.5 text-sm font-semibold text-stone-600 active:scale-95 dark:border-stone-700 dark:text-stone-300"
           >
             🍚 {{ t('result.openInOpenRice') }}
+          </a>
+          <a
+            v-if="tabelogUrl"
+            :href="tabelogUrl"
+            target="_blank"
+            rel="noopener"
+            class="rounded-full border border-stone-300 px-3 py-1.5 text-sm font-semibold text-stone-600 active:scale-95 dark:border-stone-700 dark:text-stone-300"
+          >
+            🍱 Tabelog
           </a>
           <button
             type="button"

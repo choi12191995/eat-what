@@ -30,6 +30,11 @@ watchDebounced(
       suggestions.value = []
       return
     }
+    // Skip 1-char queries — they only return noise and burn quota
+    if (q.trim().length < 2) {
+      suggestions.value = []
+      return
+    }
     searching.value = true
     try {
       suggestions.value = await provider.value.autocomplete({
@@ -45,7 +50,8 @@ watchDebounced(
       searching.value = false
     }
   },
-  { debounce: 350 },
+  // Long pause before firing: each keystroke burst = one request at most
+  { debounce: 2000 },
 )
 
 async function pick(s: PlaceSuggestion) {

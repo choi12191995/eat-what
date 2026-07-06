@@ -7,6 +7,7 @@ import type {
 } from '@/types/models'
 import { typesForCuisines, CUISINES } from '@/lib/places/cuisines'
 import { keywordTagById, MAX_KEYWORD_TAGS, type KeywordTag } from '@/lib/places/keywords'
+import { isOpenAt, minutesFromHHmm } from '@/lib/places/openingHours'
 import type { PlacesProvider } from '@/lib/places/provider'
 import { haversineMeters } from '@/lib/geo/distance'
 import type { Region } from '@/lib/geo/region'
@@ -30,10 +31,13 @@ export interface FilterContext {
   region: Region
   blockedIds: ReadonlySet<string>
   recentIds: ReadonlySet<string>
+  /** "Today" for the arrive-at weekday; injectable for tests */
+  now?: Date
 }
 
 export interface FilterOverrides {
   skipOpenNow?: boolean
+  skipArriveAt?: boolean
   skipMinRating?: boolean
   skipBudget?: boolean
   skipRecent?: boolean
@@ -63,6 +67,16 @@ export function filterPool(
 
     // -- soft filters --
     if (!o.skipOpenNow && cond.openNowOnly && r.openNow !== true) return false
+    // Pre-draw for later: drop places whose known hours don't cover the
+    // arrival time. Places with no structured hours pass (same philosophy
+    // as unknown prices — don't punish sparse data).
+    if (!o.skipArriveAt && !cond.openNowOnly && cond.arriveAt) {
+      const minutes = minutesFromHHmm(cond.arriveAt)
+      if (minutes !== null && r.openPeriods?.length) {
+        const day = (ctx.now ?? new Date()).getDay()
+        if (!isOpenAt(r.openPeriods, day, minutes)) return false
+      }
+    }
     if (!o.skipMinRating && cond.minRating !== null) {
       if (r.rating === undefined || r.rating < cond.minRating) return false
     }

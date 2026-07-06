@@ -1,4 +1,4 @@
-import type { PriceLevel, Restaurant } from '@/types/models'
+import type { OpenPeriod, PriceLevel, Restaurant } from '@/types/models'
 
 interface GoogleMoney {
   currencyCode?: string
@@ -18,7 +18,14 @@ export interface GooglePlace {
   userRatingCount?: number
   priceLevel?: string
   priceRange?: { startPrice?: GoogleMoney; endPrice?: GoogleMoney }
-  currentOpeningHours?: { openNow?: boolean; weekdayDescriptions?: string[] }
+  currentOpeningHours?: {
+    openNow?: boolean
+    weekdayDescriptions?: string[]
+    periods?: {
+      open?: { day?: number; hour?: number; minute?: number }
+      close?: { day?: number; hour?: number; minute?: number }
+    }[]
+  }
   photos?: { name?: string }[]
   googleMapsUri?: string
   businessStatus?: string
@@ -55,6 +62,24 @@ export function todayHoursFrom(
   return idx >= 0 ? entry.slice(idx + 2) : entry
 }
 
+function toPeriods(
+  periods: NonNullable<GooglePlace['currentOpeningHours']>['periods'],
+): OpenPeriod[] | undefined {
+  if (!periods?.length) return undefined
+  const out: OpenPeriod[] = []
+  for (const p of periods) {
+    if (p.open?.day === undefined) continue
+    out.push({
+      open: { day: p.open.day, hour: p.open.hour ?? 0, minute: p.open.minute ?? 0 },
+      close:
+        p.close?.day !== undefined
+          ? { day: p.close.day, hour: p.close.hour ?? 0, minute: p.close.minute ?? 0 }
+          : undefined,
+    })
+  }
+  return out.length ? out : undefined
+}
+
 export function normalizePlace(p: GooglePlace, now: () => number = Date.now): Restaurant | null {
   if (!p.id || p.location?.latitude === undefined || p.location?.longitude === undefined) {
     return null
@@ -75,6 +100,7 @@ export function normalizePlace(p: GooglePlace, now: () => number = Date.now): Re
     priceRange: priceRange && (priceRange.start || priceRange.end) ? priceRange : undefined,
     openNow: p.currentOpeningHours?.openNow,
     todayHours: todayHoursFrom(p.currentOpeningHours?.weekdayDescriptions),
+    openPeriods: toPeriods(p.currentOpeningHours?.periods),
     photoNames: (p.photos ?? [])
       .map((ph) => ph.name)
       .filter((n): n is string => !!n)
