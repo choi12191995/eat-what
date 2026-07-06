@@ -11,14 +11,16 @@ import { emojiForTypes } from '@/lib/places/cuisines'
 const { t, locale } = useI18n()
 const repo = createHistoryRepo(getDb())
 
+type Stats = Awaited<ReturnType<typeof repo.stats>>
+
 const groups = ref<DayGroup[]>([])
-const topCuisines = ref<{ id: string; emoji: string; count: number }[]>([])
+const stats = ref<Stats | null>(null)
 const selected = ref<Restaurant | null>(null)
 const cardOpen = ref(false)
 
 async function load() {
   groups.value = await repo.listGroupedByDay()
-  topCuisines.value = await repo.topCuisines(3)
+  stats.value = await repo.stats(5)
 }
 onMounted(load)
 
@@ -45,16 +47,44 @@ function openRecord(r: Restaurant) {
   <div class="mx-auto max-w-md px-6 pt-10">
     <h1 class="mb-4 text-2xl font-bold">{{ t('nav.history') }}</h1>
 
-    <div v-if="topCuisines.length" class="mb-6 flex flex-wrap items-center gap-2 text-sm">
-      <span class="text-stone-500 dark:text-stone-400">{{ t('history.topCuisines') }}</span>
-      <span
-        v-for="c in topCuisines"
-        :key="c.id"
-        class="rounded-full bg-orange-100 px-2.5 py-0.5 text-orange-700 dark:bg-orange-950 dark:text-orange-300"
-      >
-        {{ c.emoji }} {{ t(`cuisine.${c.id}`) }} ×{{ c.count }}
-      </span>
-    </div>
+    <!-- stats block -->
+    <section
+      v-if="stats && stats.total > 0"
+      class="mb-6 rounded-2xl border border-stone-200 p-4 dark:border-stone-800"
+    >
+      <div class="grid grid-cols-3 gap-2 text-center">
+        <div>
+          <p class="text-xl font-black">{{ stats.total }}</p>
+          <p class="text-[11px] text-stone-400 dark:text-stone-500">{{ t('history.statTotal') }}</p>
+        </div>
+        <div>
+          <p class="text-xl font-black">{{ stats.distinctPlaces }}</p>
+          <p class="text-[11px] text-stone-400 dark:text-stone-500">{{ t('history.statPlaces') }}</p>
+        </div>
+        <div>
+          <p class="text-xl font-black">
+            {{ stats.streakDays }}<span v-if="stats.streakDays >= 3">🔥</span>
+          </p>
+          <p class="text-[11px] text-stone-400 dark:text-stone-500">{{ t('history.statStreak') }}</p>
+        </div>
+      </div>
+
+      <div v-if="stats.topCuisines.length" class="mt-4 space-y-1.5">
+        <p class="text-xs font-semibold text-stone-500 dark:text-stone-400">
+          {{ t('history.topCuisines') }}
+        </p>
+        <div v-for="c in stats.topCuisines" :key="c.id" class="flex items-center gap-2 text-xs">
+          <span class="w-24 shrink-0 truncate">{{ c.emoji }} {{ t(`cuisine.${c.id}`) }}</span>
+          <span class="h-2.5 flex-1 overflow-hidden rounded-full bg-stone-100 dark:bg-stone-800">
+            <span
+              class="block h-full rounded-full bg-orange-400"
+              :style="{ width: `${Math.round(c.share * 100)}%` }"
+            />
+          </span>
+          <span class="w-6 text-right text-stone-400">{{ c.count }}</span>
+        </div>
+      </div>
+    </section>
 
     <p v-if="!groups.length" class="text-sm text-stone-500 dark:text-stone-400">
       {{ t('history.empty') }}

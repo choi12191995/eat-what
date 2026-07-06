@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 
 import type { LatLng, RelaxationSuggestion } from '@/types/models'
-import { runDraw } from '@/lib/draw/engine'
+import { runDraw, styleWeight } from '@/lib/draw/engine'
 import { GooglePlacesError } from '@/lib/places/googlePlaces'
 import { getProvider } from '@/lib/places'
 import { DEMO_ORIGIN } from '@/lib/places/mockProvider'
@@ -48,6 +48,21 @@ export function useDraw() {
       const region = detectRegion(origin, 'HK')
       const provider = getProvider(settings.googleApiKey)
       const cond = drawStore.conditions
+
+      // drawStyle: bias the winner pick by how often each place was accepted.
+      // Places absent from the map default to weight 1 in selectCandidates,
+      // so store each weight RELATIVE to the never-tried weight — that keeps
+      // explore's boost for unknown places without enumerating them.
+      let weights: Map<string, number> | undefined
+      if (cond.drawStyle !== 'uniform') {
+        const counts = await history.acceptedCountsByPlaceId()
+        const base = styleWeight(cond.drawStyle, 0)
+        weights = new Map()
+        for (const [id, count] of counts) {
+          weights.set(id, styleWeight(cond.drawStyle, count) / base)
+        }
+      }
+
       const outcome = await runDraw(cond, origin, {
         provider,
         lang: settings.locale,
@@ -58,6 +73,7 @@ export function useDraw() {
           cond.excludeRecentDays !== null
             ? await history.recentAcceptedPlaceIds(cond.excludeRecentDays)
             : new Set(),
+        weights,
       })
       drawStore.setOutcome(outcome, origin, region)
       drawStore.aiReason = null

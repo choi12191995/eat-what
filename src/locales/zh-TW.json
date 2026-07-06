@@ -48,6 +48,17 @@
     "minRating": "最低評分",
     "partySize": "用餐人數",
     "noRepeat": "略過最近吃過的",
+    "style": "抽選風格",
+    "styleOpt": {
+      "uniform": "🎲 公平",
+      "favor": "❤️ 常去優先",
+      "explore": "🧭 冒險"
+    },
+    "styleHint": {
+      "uniform": "每間符合的餐廳機會均等。",
+      "favor": "吃過並接受過的店，中選機會最多提高 4 倍。",
+      "explore": "沒去過的店機會加成；重複去過的逐漸淡出。"
+    },
     "days": "{n} 天",
     "any": "不限",
     "reset": "重設",
@@ -64,6 +75,7 @@
     "openInMaps": "Google 地圖",
     "openInOpenRice": "OpenRice",
     "share": "分享",
+    "shareImage": "圖片",
     "copied": "已複製",
     "never": "以後不要再抽到這家",
     "aiPick": "AI 之選"
@@ -93,6 +105,32 @@
     "veggie": "素食",
     "mexican": "墨西哥菜",
     "middleEastern": "中東菜"
+  },
+  "room": {
+    "title": "朋友一齊揀",
+    "invite": "同朋友一齊抽",
+    "joinerHint": "每人有一票反對權——點你最唔想食嗰間。",
+    "waiting": "已投反對票，等主持抽選…",
+    "left": "仲有 {n} 間候選",
+    "veto": "反對",
+    "vetoed": "已否決",
+    "finalSpin": "最終抽選 🎲",
+    "winner": "大家決定咗喇！",
+    "share": "分享房間連結",
+    "expired": "房間已過期或唔存在。房間有效期為 1 小時。",
+    "createFailed": "開唔到房間——請再試一次。"
+  },
+  "weather": {
+    "chip": {
+      "rain": "☔️ 落雨——搵近少少？",
+      "hot": "🥵 天時暑熱——想食凍嘢？",
+      "cold": "🥶 凍凍哋——食啲暖嘅？"
+    },
+    "mood": {
+      "rain": "落雨，唔想行遠，想食啲舒服嘅",
+      "hot": "好熱，想食啲清爽凍嘢",
+      "cold": "天氣凍，想食啲熱辣辣暖身嘅"
+    }
   },
   "kwGroup": {
     "hk": "港式",
@@ -146,7 +184,10 @@
     "empty": "還沒有紀錄，抽中的餐廳會出現在這裡。",
     "lunch": "午餐",
     "dinner": "晚餐",
-    "topCuisines": "你的最愛："
+    "topCuisines": "你的最愛",
+    "statTotal": "餐已決定",
+    "statPlaces": "間食過",
+    "statStreak": "天連續"
   },
   "pwa": {
     "iosTitle": "安裝食乜好",
@@ -200,6 +241,11 @@
       "day4": "四",
       "day5": "五",
       "day6": "六"
+    },
+    "siri": {
+      "title": "Siri 捷徑",
+      "note": "安裝捷徑後，只要講「Hey Siri，食乜好」App 就會自動打開並立即抽選。",
+      "install": "安裝 Siri 捷徑"
     },
     "blocklist": {
       "title": "拒絕往來名單",

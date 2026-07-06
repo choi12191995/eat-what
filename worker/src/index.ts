@@ -9,6 +9,7 @@
 import { buildPushPayload } from '@block65/webcrypto-web-push'
 
 import { mealCopy, testCopy, type NotificationCopy } from './copy'
+import { applyVeto, createRoom, getRoom, publicRoom, setResult } from './rooms'
 import { dueMeals, localParts, parseTime, type MealPref, type MealPrefs } from './schedule'
 import type { CronHealth, Env, StoredSubscription } from './types'
 
@@ -209,7 +210,8 @@ async function deliverDue(env: Env, now: Date): Promise<void> {
   do {
     const page = await env.SUBS.list({ cursor })
     for (const { name: key } of page.keys) {
-      if (key.startsWith('_')) continue // metadata, not a subscription
+      // Subscription keys are SHA-256 hex; skip metadata and room:* entries
+      if (!/^[0-9a-f]{64}$/.test(key)) continue
       const stored = await env.SUBS.get<StoredSubscription>(key, 'json')
       if (!stored) continue
       health.scanned++
@@ -277,6 +279,36 @@ export default {
     if (url.pathname === '/test' && request.method === 'POST') {
       return handleTest(request, env)
     }
+
+    // Group-draw rooms
+    if (url.pathname === '/room' && request.method === 'POST') {
+      const body = await readBody(request)
+      if (!body) return json({ error: 'bad request' }, 400)
+      const { status, payload } = await createRoom(env, body)
+      return json(payload, status)
+    }
+    const roomMatch = /^\/room\/([A-Za-z0-9]{6})(\/(veto|result))?$/.exec(url.pathname)
+    if (roomMatch) {
+      const id = roomMatch[1]!
+      const action = roomMatch[3]
+      if (!action && request.method === 'GET') {
+        const room = await getRoom(env, id)
+        return room ? json(publicRoom(room)) : json({ error: 'room not found' }, 404)
+      }
+      if (request.method === 'POST') {
+        const body = await readBody(request)
+        if (!body) return json({ error: 'bad request' }, 400)
+        if (action === 'veto') {
+          const { status, payload } = await applyVeto(env, id, body)
+          return json(payload, status)
+        }
+        if (action === 'result') {
+          const { status, payload } = await setResult(env, id, body)
+          return json(payload, status)
+        }
+      }
+    }
+
     return json({ error: 'not found' }, 404)
   },
 

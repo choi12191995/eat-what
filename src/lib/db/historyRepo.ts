@@ -50,6 +50,18 @@ export function createHistoryRepo(db: EatWhatDB, now: () => number = Date.now) {
       return new Set(records.filter((r) => r.action === 'accepted').map((r) => r.restaurant.id))
     },
 
+    /** How often each place was accepted recently — drives drawStyle weights. */
+    async acceptedCountsByPlaceId(days = 90): Promise<Map<string, number>> {
+      const cutoff = now() - days * 24 * 60 * 60 * 1000
+      const records = await db.draws.where('timestamp').above(cutoff).toArray()
+      const counts = new Map<string, number>()
+      for (const rec of records) {
+        if (rec.action !== 'accepted') continue
+        counts.set(rec.restaurant.id, (counts.get(rec.restaurant.id) ?? 0) + 1)
+      }
+      return counts
+    },
+
     async topCuisines(n = 3): Promise<{ id: string; emoji: string; count: number }[]> {
       const records = await db.draws.toArray()
       const counts = new Map<string, { emoji: string; count: number }>()
@@ -68,6 +80,54 @@ export function createHistoryRepo(db: EatWhatDB, now: () => number = Date.now) {
 
     async count(): Promise<number> {
       return db.draws.count()
+    },
+
+    /** Aggregates for the History stats block — one pass over all records. */
+    async stats(topN = 5): Promise<{
+      total: number
+      last30: number
+      distinctPlaces: number
+      streakDays: number
+      topCuisines: { id: string; emoji: string; count: number; share: number }[]
+    }> {
+      const records = await db.draws.toArray()
+      const nowTs = now()
+      const cutoff30 = nowTs - 30 * 24 * 60 * 60 * 1000
+
+      const places = new Set<string>()
+      const days = new Set<string>()
+      const cuisineCounts = new Map<string, { emoji: string; count: number }>()
+      let last30 = 0
+      for (const rec of records) {
+        places.add(rec.restaurant.id)
+        days.add(dayKey(rec.timestamp))
+        if (rec.timestamp >= cutoff30) last30++
+        const cuisine = cuisinesOfTypes(rec.restaurant.types)[0]
+        if (cuisine) {
+          const entry = cuisineCounts.get(cuisine.id) ?? { emoji: cuisine.emoji, count: 0 }
+          entry.count += 1
+          cuisineCounts.set(cuisine.id, entry)
+        }
+      }
+
+      // Streak: consecutive days ending today (or yesterday, so a streak
+      // isn't "broken" before today's meal happened)
+      let streakDays = 0
+      const dayMs = 24 * 60 * 60 * 1000
+      let cursor = nowTs
+      if (!days.has(dayKey(cursor))) cursor -= dayMs
+      while (days.has(dayKey(cursor))) {
+        streakDays++
+        cursor -= dayMs
+      }
+
+      const maxCount = Math.max(1, ...[...cuisineCounts.values()].map((v) => v.count))
+      const topCuisines = [...cuisineCounts.entries()]
+        .map(([id, v]) => ({ id, emoji: v.emoji, count: v.count, share: v.count / maxCount }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, topN)
+
+      return { total: records.length, last30, distinctPlaces: places.size, streakDays, topCuisines }
     },
 
     async clearAll(): Promise<void> {

@@ -17,6 +17,7 @@ export function makeDefaultConditions(): DrawConditions {
     openNowOnly: true,
     minRating: null,
     excludeRecentDays: null,
+    drawStyle: 'uniform',
   }
 }
 

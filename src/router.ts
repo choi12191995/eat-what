@@ -6,5 +6,6 @@ export const router = createRouter({
     { path: '/', name: 'home', component: () => import('@/pages/HomePage.vue') },
     { path: '/history', name: 'history', component: () => import('@/pages/HistoryPage.vue') },
     { path: '/settings', name: 'settings', component: () => import('@/pages/SettingsPage.vue') },
+    { path: '/room/:id', name: 'room', component: () => import('@/pages/RoomPage.vue') },
   ],
 })

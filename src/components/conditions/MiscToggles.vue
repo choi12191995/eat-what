@@ -15,6 +15,30 @@ function bumpParty(delta: number) {
 
 <template>
   <div class="space-y-5">
+    <!-- draw style: uniform / favor favourites / explore new -->
+    <div>
+      <span class="text-sm">{{ t('conditions.style') }}</span>
+      <div class="mt-2 flex gap-2">
+        <button
+          v-for="s in (['uniform', 'favor', 'explore'] as const)"
+          :key="s"
+          type="button"
+          class="flex-1 rounded-xl border px-2 py-2 text-xs transition-all"
+          :class="
+            drawStore.conditions.drawStyle === s
+              ? 'border-orange-500 bg-orange-500/10 font-semibold text-orange-600 dark:text-orange-400'
+              : 'border-stone-300 text-stone-500 dark:border-stone-700 dark:text-stone-400'
+          "
+          @click="drawStore.conditions.drawStyle = s"
+        >
+          {{ t(`conditions.styleOpt.${s}`) }}
+        </button>
+      </div>
+      <p class="mt-1.5 text-xs text-stone-400 dark:text-stone-500">
+        {{ t(`conditions.styleHint.${drawStore.conditions.drawStyle}`) }}
+      </p>
+    </div>
+
     <!-- open now -->
     <div class="flex items-center justify-between">
       <span class="text-sm">{{ t('conditions.openNow') }}</span>

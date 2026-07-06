@@ -7,6 +7,7 @@ import ModalShell from '@/components/ui/ModalShell.vue'
 import RatingStars from '@/components/ui/RatingStars.vue'
 import AiBlurb from './AiBlurb.vue'
 import { useShareResult } from '@/composables/useShareResult'
+import { drawCardImage, shareCardImage } from '@/lib/share/cardImage'
 import { cuisinesOfTypes, emojiForTypes } from '@/lib/places/cuisines'
 import { formatPrice } from '@/lib/format/price'
 import { formatDistance, haversineMeters } from '@/lib/geo/distance'
@@ -76,6 +77,26 @@ const openRiceUrl = computed(() =>
 function close() {
   if (readonly.value) emit('close')
   else drawStore.acceptWinner()
+}
+
+const imageBusy = ref(false)
+async function shareAsImage() {
+  if (!r.value || imageBusy.value) return
+  imageBusy.value = true
+  try {
+    const canvas = drawCardImage({
+      restaurant: r.value,
+      emoji: heroEmoji.value,
+      color: heroColor.value,
+      priceText: price.value && price.value.source !== 'none' ? price.value.text : null,
+      distanceText: distanceText.value ? t('result.distanceAway', { d: distanceText.value }) : null,
+      cuisineText: cuisineTags.value.map((c) => `${c.emoji} ${t(`cuisine.${c.id}`)}`).join('  '),
+      footer: `🎡 ${t('app.name')} · eat-what.samsonchoi.hk`,
+    })
+    await shareCardImage(canvas)
+  } finally {
+    imageBusy.value = false
+  }
 }
 </script>
 
@@ -182,6 +203,14 @@ function close() {
             @click="share(r, t('app.name'))"
           >
             {{ copied ? '✅ ' + t('result.copied') : '📤 ' + t('result.share') }}
+          </button>
+          <button
+            type="button"
+            class="rounded-full border border-stone-300 px-3 py-1.5 text-sm font-semibold text-stone-600 active:scale-95 disabled:opacity-50 dark:border-stone-700 dark:text-stone-300"
+            :disabled="imageBusy"
+            @click="shareAsImage"
+          >
+            🖼️ {{ t('result.shareImage') }}
           </button>
         </div>
 

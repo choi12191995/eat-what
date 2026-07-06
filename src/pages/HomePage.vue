@@ -1,9 +1,14 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { usePreferredReducedMotion } from '@vueuse/core'
 import confetti from 'canvas-confetti'
+
+import type { LatLng } from '@/types/models'
+import { fetchWeatherMood, type WeatherMood } from '@/lib/weather/openMeteo'
+import { createRoom, roomUrl } from '@/lib/rooms/client'
+import { getCurrentLocation } from '@/composables/useOrigin'
 
 import SpinWheel, { type WheelItem } from '@/components/wheel/SpinWheel.vue'
 import ConditionsDrawer from '@/components/conditions/ConditionsDrawer.vue'
@@ -78,6 +83,77 @@ async function onDraw() {
   await startDraw()
 }
 
+// Group draw: share the current wheel; friends each veto one, host spins
+const roomBusy = ref(false)
+async function inviteFriends() {
+  if (roomBusy.value || drawStore.candidates.length < 2) return
+  roomBusy.value = true
+  try {
+    const created = await createRoom(drawStore.candidates, settings.locale)
+    if (!created) {
+      drawStore.errorKey = 'room.createFailed'
+      return
+    }
+    const url = roomUrl(created.roomId)
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: t('room.title'), url })
+      } catch {
+        // share cancelled — still enter the room
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url)
+      } catch {
+        // clipboard unavailable — the room page has its own share button
+      }
+    }
+    await router.push(`/room/${created.roomId}`)
+  } finally {
+    roomBusy.value = false
+  }
+}
+
+// Weather nudge: fetched only when we already have a location (never
+// prompts for permission just to check the sky)
+const weatherMood = ref<WeatherMood | null>(null)
+const weatherDismissed = ref(false)
+
+async function weatherOrigin(): Promise<LatLng | null> {
+  const o = drawStore.conditions.origin
+  if (o.mode === 'picked' && o.picked) return o.picked.location
+  try {
+    const status = await navigator.permissions.query({ name: 'geolocation' })
+    if (status.state !== 'granted') return null
+  } catch {
+    return null
+  }
+  const fix = await getCurrentLocation()
+  return fix.ok ? fix.location : null
+}
+
+onMounted(async () => {
+  const origin = await weatherOrigin()
+  if (!origin) return
+  weatherMood.value = await fetchWeatherMood(origin)
+})
+
+function applyWeatherPreset() {
+  const mood = weatherMood.value
+  if (!mood) return
+  const c = drawStore.conditions
+  if (mood === 'rain') {
+    c.radiusMeters = Math.min(c.radiusMeters, 500)
+    c.openNowOnly = true
+  } else {
+    const tag = mood === 'cold' ? 'hotpot' : 'dessertSoup'
+    if (!c.keywords.includes(tag) && c.keywords.length < 3) c.keywords.push(tag)
+  }
+  if (hasAi.value && !drawStore.mood.trim()) drawStore.mood = t(`weather.mood.${mood}`)
+  haptics.tap()
+  weatherDismissed.value = true
+}
+
 // Notification deep link: /?draw=1 spins immediately
 const route = useRoute()
 const router = useRouter()
@@ -106,6 +182,22 @@ watch(
       </button>
     </div>
 
+    <button
+      v-if="weatherMood && !weatherDismissed"
+      type="button"
+      class="flex items-center gap-2 rounded-full border border-sky-300 bg-sky-50 px-3.5 py-1.5 text-xs font-semibold text-sky-700 active:scale-95 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-300"
+      @click="applyWeatherPreset"
+    >
+      {{ t(`weather.chip.${weatherMood}`) }}
+      <span
+        class="text-sky-400 dark:text-sky-600"
+        aria-hidden="true"
+        @click.stop="weatherDismissed = true"
+      >
+        ✕
+      </span>
+    </button>
+
     <SpinWheel
       ref="wheelRef"
       :items="wheelItems"
@@ -120,6 +212,16 @@ watch(
     >
       🎉 {{ drawStore.winner.name }}
     </p>
+
+    <button
+      v-if="drawStore.phase === 'landed' && drawStore.candidates.length >= 2"
+      type="button"
+      class="rounded-full border border-violet-300 bg-violet-500/10 px-4 py-2 text-sm font-semibold text-violet-600 active:scale-95 disabled:opacity-50 dark:border-violet-800 dark:text-violet-300"
+      :disabled="roomBusy"
+      @click="inviteFriends"
+    >
+      {{ roomBusy ? '…' : '👥 ' + t('room.invite') }}
+    </button>
 
     <RelaxationHints
       v-if="!busy && drawStore.candidates.length === 0"

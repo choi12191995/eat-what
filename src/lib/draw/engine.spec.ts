@@ -9,6 +9,7 @@ import {
   runDraw,
   selectCandidates,
   searchCacheKey,
+  styleWeight,
   type FilterContext,
 } from './engine'
 
@@ -232,5 +233,41 @@ describe('runDraw with keyword tags', () => {
     const out = await runDraw(legacy, ORIGIN, { provider, lang: 'en', region: 'HK' })
     expect(provider.nearbyCalls).toBe(1)
     expect(out.pool.length).toBeGreaterThan(0)
+  })
+})
+
+describe('drawStyle weighting', () => {
+  it('styleWeight shapes match the promised behavior', () => {
+    expect(styleWeight('uniform', 5)).toBe(1)
+    expect(styleWeight('favor', 0)).toBe(1)
+    expect(styleWeight('favor', 4)).toBe(4)
+    expect(styleWeight('favor', 99)).toBe(4) // capped
+    expect(styleWeight('explore', 0)).toBe(1.5)
+    expect(styleWeight('explore', 2)).toBeCloseTo(1 / 3)
+  })
+
+  it('selectCandidates strongly favors a heavily weighted place', () => {
+    const pool = [place({ id: 'heavy' }), place({ id: 'a' }), place({ id: 'b' })]
+    const weights = new Map([
+      ['heavy', 10_000],
+      ['a', 0.0001],
+      ['b', 0.0001],
+    ])
+    let heavyWins = 0
+    for (let i = 0; i < 40; i++) {
+      const { candidates, winnerIndex } = selectCandidates(pool, weights)
+      if (candidates[winnerIndex]!.id === 'heavy') heavyWins++
+    }
+    expect(heavyWins).toBeGreaterThanOrEqual(38)
+  })
+
+  it('falls back to uniform when all weights are zero/invalid', () => {
+    const pool = [place({ id: 'a' }), place({ id: 'b' })]
+    const weights = new Map([
+      ['a', 0],
+      ['b', 0],
+    ])
+    const { winnerIndex } = selectCandidates(pool, weights)
+    expect(winnerIndex === 0 || winnerIndex === 1).toBe(true)
   })
 })

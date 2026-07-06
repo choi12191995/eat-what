@@ -57,7 +57,11 @@ export interface DrawConditions {
   minRating: number | null
   /** Don't suggest places accepted within the last N days; null = off */
   excludeRecentDays: number | null
+  /** Winner weighting: uniform | favor past favourites | explore new places */
+  drawStyle: DrawStyle
 }
+
+export type DrawStyle = 'uniform' | 'favor' | 'explore'
 
 export type DrawAction = 'accepted' | 'respun'
 

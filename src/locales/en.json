@@ -48,6 +48,17 @@
     "minRating": "Min rating",
     "partySize": "Party size",
     "noRepeat": "Skip recent picks",
+    "style": "Draw style",
+    "styleOpt": {
+      "uniform": "🎲 Fair",
+      "favor": "❤️ Favourites",
+      "explore": "🧭 Explore"
+    },
+    "styleHint": {
+      "uniform": "Every match gets an equal chance.",
+      "favor": "Places you've accepted before get up to 4× the chance.",
+      "explore": "Never-tried places get boosted; repeats fade out."
+    },
     "days": "{n}d",
     "any": "Any",
     "reset": "Reset",
@@ -64,6 +75,7 @@
     "openInMaps": "Google Maps",
     "openInOpenRice": "OpenRice",
     "share": "Share",
+    "shareImage": "Image",
     "copied": "Copied",
     "never": "Never suggest this place again",
     "aiPick": "AI's pick"
@@ -93,6 +105,32 @@
     "veggie": "Vegetarian",
     "mexican": "Mexican",
     "middleEastern": "Middle Eastern"
+  },
+  "room": {
+    "title": "Group draw",
+    "invite": "Draw with friends",
+    "joinerHint": "Everyone gets ONE veto — tap the place you refuse to eat.",
+    "waiting": "Veto placed. Waiting for the host to spin…",
+    "left": "{n} still in the running",
+    "veto": "Veto",
+    "vetoed": "Vetoed",
+    "finalSpin": "FINAL DRAW 🎲",
+    "winner": "The group has decided!",
+    "share": "Share room link",
+    "expired": "This room has expired or doesn't exist. Rooms live for 1 hour.",
+    "createFailed": "Couldn't create the room — try again."
+  },
+  "weather": {
+    "chip": {
+      "rain": "☔️ Raining — keep it close?",
+      "hot": "🥵 Scorching — something icy?",
+      "cold": "🥶 Chilly — something warming?"
+    },
+    "mood": {
+      "rain": "raining, don't want to walk far, comfort food please",
+      "hot": "hot day, want something cold and refreshing",
+      "cold": "cold day, want something hot and warming"
+    }
   },
   "kwGroup": {
     "hk": "Hong Kong style",
@@ -146,7 +184,10 @@
     "empty": "No draws yet. Your picks will appear here.",
     "lunch": "Lunch",
     "dinner": "Dinner",
-    "topCuisines": "Your favourites:"
+    "topCuisines": "Your favourites",
+    "statTotal": "meals decided",
+    "statPlaces": "places tried",
+    "statStreak": "day streak"
   },
   "pwa": {
     "iosTitle": "Install EatWhat",
@@ -200,6 +241,11 @@
       "day4": "Th",
       "day5": "Fr",
       "day6": "Sa"
+    },
+    "siri": {
+      "title": "Siri shortcut",
+      "note": "Install the shortcut, then just say “Hey Siri, 食乜好” — the app opens and spins immediately.",
+      "install": "Install Siri shortcut"
     },
     "blocklist": {
       "title": "Never-suggest list",

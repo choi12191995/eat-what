@@ -1,11 +1,17 @@
-import type { DrawConditions, LatLng, Restaurant, RelaxationSuggestion } from '@/types/models'
+import type {
+  DrawConditions,
+  DrawStyle,
+  LatLng,
+  Restaurant,
+  RelaxationSuggestion,
+} from '@/types/models'
 import { typesForCuisines, CUISINES } from '@/lib/places/cuisines'
 import { keywordTagById, MAX_KEYWORD_TAGS, type KeywordTag } from '@/lib/places/keywords'
 import type { PlacesProvider } from '@/lib/places/provider'
 import { haversineMeters } from '@/lib/geo/distance'
 import type { Region } from '@/lib/geo/region'
 import { levelFromPriceRange } from '@/lib/format/price'
-import { cryptoRandomInt, shuffle } from './random'
+import { cryptoRandomInt, shuffle, weightedRandomIndex } from './random'
 import { MAX_WHEEL_SEGMENTS } from './defaults'
 import { suggestRelaxations } from './relaxation'
 
@@ -75,11 +81,35 @@ export interface Selection {
   winnerIndex: number
 }
 
-/** Uniformly pick up to MAX_WHEEL_SEGMENTS candidates and the winner among them. */
-export function selectCandidates(pool: readonly Restaurant[]): Selection {
+/**
+ * Winner weight per restaurant given how often it was accepted before.
+ * favor: regulars up to ~4× base chance · explore: never-tried boosted,
+ * repeat visits decay · uniform: everything equal.
+ */
+export function styleWeight(style: DrawStyle, acceptedCount: number): number {
+  switch (style) {
+    case 'favor':
+      return 1 + Math.min(acceptedCount, 4) * 0.75
+    case 'explore':
+      return acceptedCount === 0 ? 1.5 : 1 / (1 + acceptedCount)
+    default:
+      return 1
+  }
+}
+
+/**
+ * Pick up to MAX_WHEEL_SEGMENTS candidates (uniformly — every match deserves
+ * a wheel slot) and the winner among them, optionally weighted by id.
+ */
+export function selectCandidates(
+  pool: readonly Restaurant[],
+  weights?: ReadonlyMap<string, number>,
+): Selection {
   if (pool.length === 0) return { candidates: [], winnerIndex: -1 }
   const candidates = shuffle(pool).slice(0, MAX_WHEEL_SEGMENTS)
-  return { candidates, winnerIndex: cryptoRandomInt(candidates.length) }
+  if (!weights) return { candidates, winnerIndex: cryptoRandomInt(candidates.length) }
+  const winnerIndex = weightedRandomIndex(candidates.map((c) => weights.get(c.id) ?? 1))
+  return { candidates, winnerIndex }
 }
 
 export interface DrawEngineDeps {
@@ -93,6 +123,8 @@ export interface DrawEngineDeps {
     get(key: string): Promise<Restaurant[] | null>
     put(key: string, value: Restaurant[]): Promise<void>
   }
+  /** Winner weights by place id (drawStyle favor/explore) */
+  weights?: ReadonlyMap<string, number>
   signal?: AbortSignal
 }
 
@@ -218,6 +250,6 @@ export async function runDraw(
       relaxations: suggestRelaxations(raw, cond, ctx),
     }
   }
-  const { candidates, winnerIndex } = selectCandidates(pool)
+  const { candidates, winnerIndex } = selectCandidates(pool, deps.weights)
   return { pool, candidates, winnerIndex, relaxations: [] }
 }
