@@ -109,6 +109,50 @@ export async function disablePush(): Promise<void> {
   await sub.unsubscribe()
 }
 
+export type HealResult = 'synced' | 'failed' | 'none'
+
+/**
+ * Self-healing re-registration, safe to call on every app open (no user
+ * gesture needed once permission is granted). iOS can silently invalidate a
+ * push endpoint — e.g. across app/service-worker updates — which leaves the
+ * server pushing into a void until it prunes the record. Re-reading the
+ * live subscription and re-upserting it keeps the server's copy current,
+ * and re-subscribes if the browser lost the subscription entirely.
+ */
+export async function healSubscription(
+  prefs: NotificationPrefs,
+  locale: string,
+): Promise<HealResult> {
+  if (pushSupport() !== 'ok' || Notification.permission !== 'granted') return 'none'
+  const reg = await getRegistration()
+  if (!reg) return 'none'
+
+  let sub = await reg.pushManager.getSubscription()
+  if (!sub) {
+    if (!prefs.lunch.enabled && !prefs.dinner.enabled) return 'none'
+    try {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(PUSH_VAPID_PUBLIC_KEY) as BufferSource,
+      })
+    } catch {
+      return 'failed'
+    }
+  }
+  return (await syncPrefs(sub, prefs, locale)) ? 'synced' : 'failed'
+}
+
+/** "12:07" → "12:00", "12:08" → "12:15" — reminders align to quarter hours. */
+export function snapToQuarter(time: string): string {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(time)
+  if (!m) return time
+  let total = Math.round((Number(m[1]) * 60 + Number(m[2])) / 15) * 15
+  if (total >= 24 * 60) total = 23 * 60 + 45
+  const h = Math.floor(total / 60)
+  const min = total % 60
+  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`
+}
+
 export async function sendTestPush(): Promise<boolean> {
   const sub = await getExistingSubscription()
   if (!sub) return false

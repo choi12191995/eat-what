@@ -7,7 +7,7 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-07-01",
   "kv_namespaces": [{ "binding": "SUBS", "id": "d5d79400ed32429cbc00d605cbfb2329" }],
-  "triggers": { "crons": ["*/15 * * * *"] },
+  "triggers": { "crons": ["*/5 * * * *"] },
   "vars": {
     "VAPID_PUBLIC_KEY": "BE0mXKJg-sQWicgTiHLS6egp4VNj8-CgQTSjm87yO9HSISQPMHR89xynGFJj2zSbuw9o9cXxSpJzVW2T5MEJJr4",
     // RFC 8292 allows an https: URL as the contact subject

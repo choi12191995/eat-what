@@ -14,7 +14,20 @@ export interface StoredSubscription {
   prefs: MealPrefs
   /** Local date (YYYY-MM-DD) of the last send, per meal — dedup across cron runs */
   lastSent?: Partial<Record<Meal, string>>
+  /** Consecutive 404/410 responses — pruned only after PRUNE_STRIKES in a row,
+   * so one transient push-service hiccup can't kill a live subscription */
+  strikes?: number
   updatedAt?: string
+}
+
+/** Written under META_KEY on every cron run — surfaced by GET /health */
+export interface CronHealth {
+  at: string
+  scanned: number
+  due: number
+  sent: number
+  errors: number
+  pruned: number
 }
 
 export interface Env {

@@ -6,6 +6,7 @@ import { usePreferredDark } from '@vueuse/core'
 import TabBar from '@/components/ui/TabBar.vue'
 import SetupChecklist from '@/components/onboarding/SetupChecklist.vue'
 import IosInstallHint from '@/components/pwa/IosInstallHint.vue'
+import { healSubscription } from '@/lib/push/client'
 import { useSettingsStore } from '@/stores/settings'
 
 const settings = useSettingsStore()
@@ -14,6 +15,18 @@ const { locale } = useI18n()
 
 onMounted(() => {
   if (!settings.googleApiKey && !settings.setupDismissed) settings.setupOpen = true
+
+  // Re-register the push subscription on every open/resume: iOS can rotate
+  // or drop endpoints (e.g. across app updates), and the server prunes dead
+  // ones — healing keeps reminders alive without any user action.
+  void healSubscription(settings.notifications, settings.locale)
+  let lastHeal = Date.now()
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return
+    if (Date.now() - lastHeal < 60_000) return
+    lastHeal = Date.now()
+    void healSubscription(settings.notifications, settings.locale)
+  })
 })
 
 watchEffect(() => {

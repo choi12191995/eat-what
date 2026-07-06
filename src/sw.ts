@@ -53,16 +53,16 @@ interface PushPayload {
 }
 
 self.addEventListener('push', (event) => {
-  let payload: PushPayload | null = null
+  let payload: PushPayload = {}
   try {
-    payload = (event.data?.json() as PushPayload) ?? null
+    payload = (event.data?.json() as PushPayload) ?? {}
   } catch {
-    payload = null
+    payload = {}
   }
-  if (!payload?.title) return
-  // iOS requires every push to show a notification — never a silent push
+  // ALWAYS show a notification, even for an unparseable payload — iOS
+  // revokes push subscriptions that stay silent after receiving a push
   event.waitUntil(
-    self.registration.showNotification(payload.title, {
+    self.registration.showNotification(payload.title ?? 'EatWhat 食乜好', {
       body: payload.body,
       icon: '/pwa-192x192.png',
       badge: '/pwa-192x192.png',

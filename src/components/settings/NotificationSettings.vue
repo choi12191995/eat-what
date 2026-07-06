@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { watchDebounced } from '@vueuse/core'
 
@@ -7,8 +7,10 @@ import {
   disablePush,
   enablePush,
   getExistingSubscription,
+  healSubscription,
   pushSupport,
   sendTestPush,
+  snapToQuarter,
   syncPrefs,
 } from '@/lib/push/client'
 import { useSettingsStore } from '@/stores/settings'
@@ -36,10 +38,29 @@ onMounted(async () => {
     state.value = 'denied'
     return
   }
-  if (Notification.permission === 'granted' && (await getExistingSubscription())) {
+  // Heal on open: re-upsert the live subscription so the server copy can
+  // never silently drift from what this device holds
+  const healed = await healSubscription(settings.notifications, settings.locale)
+  if (healed === 'synced') {
     state.value = 'on'
+  } else if (healed === 'failed') {
+    if (await getExistingSubscription()) {
+      state.value = 'on'
+      showServerError.value = true
+    }
   }
 })
+
+// Reminders align to quarter hours (the cron's grid); snap any stray value
+watch(
+  () => [settings.notifications.lunch.time, settings.notifications.dinner.time] as const,
+  ([lunch, dinner]) => {
+    const l = snapToQuarter(lunch)
+    const d = snapToQuarter(dinner)
+    if (l !== lunch) settings.notifications.lunch.time = l
+    if (d !== dinner) settings.notifications.dinner.time = d
+  },
+)
 
 async function enable() {
   state.value = 'pending'
@@ -67,13 +88,14 @@ function toggleDay(meal: 'lunch' | 'dinner', day: number) {
   else days.push(day)
 }
 
-// Push edits (times/days/toggles, or a language switch) to the worker
+// Push edits (times/days/toggles, or a language switch) to the worker;
+// surface failures instead of drifting silently
 watchDebounced(
   () => JSON.stringify(settings.notifications) + settings.locale,
   async () => {
     if (state.value !== 'on') return
     const sub = await getExistingSubscription()
-    if (sub) await syncPrefs(sub, settings.notifications, settings.locale)
+    showServerError.value = !(sub && (await syncPrefs(sub, settings.notifications, settings.locale)))
   },
   { debounce: 800 },
 )
@@ -147,6 +169,7 @@ async function onTest() {
                 <input
                   v-model="settings.notifications[meal.id].time"
                   type="time"
+                  step="900"
                   required
                   class="rounded-lg border border-stone-300 bg-transparent px-2 py-1 text-sm font-semibold text-stone-800 dark:border-stone-700 dark:text-stone-100"
                 />

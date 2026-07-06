@@ -10,7 +10,7 @@ import { buildPushPayload } from '@block65/webcrypto-web-push'
 
 import { mealCopy, testCopy, type NotificationCopy } from './copy'
 import { dueMeals, localParts, parseTime, type MealPref, type MealPrefs } from './schedule'
-import type { Env, StoredSubscription } from './types'
+import type { CronHealth, Env, StoredSubscription } from './types'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -19,6 +19,12 @@ const CORS_HEADERS = {
 }
 
 const MAX_BODY_BYTES = 8192
+
+/** Delete a subscription only after this many consecutive gone responses */
+const PRUNE_STRIKES = 2
+
+/** Subscription keys are SHA-256 hex — '_' prefix is reserved for metadata */
+const META_KEY = '_meta:health'
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -86,7 +92,7 @@ async function readBody(request: Request): Promise<Record<string, unknown> | nul
   }
 }
 
-type SendResult = 'ok' | 'gone' | 'error'
+type SendResult = { kind: 'ok' | 'gone' | 'error'; status: number }
 
 async function sendPush(
   env: Env,
@@ -114,10 +120,11 @@ async function sendPush(
       },
     )
     const res = await fetch(stored.subscription.endpoint, payload)
-    if (res.status === 404 || res.status === 410) return 'gone'
-    return res.ok ? 'ok' : 'error'
-  } catch {
-    return 'error'
+    if (res.status === 404 || res.status === 410) return { kind: 'gone', status: res.status }
+    return { kind: res.ok ? 'ok' : 'error', status: res.status }
+  } catch (err) {
+    console.log('sendPush threw', String(err))
+    return { kind: 'error', status: 0 }
   }
 }
 
@@ -142,9 +149,12 @@ async function handleSubscribe(request: Request, env: Env): Promise<Response> {
     prefs,
     // A prefs update must not re-fire a meal already sent today
     lastSent: existing?.lastSent,
+    // A fresh sync from a live client clears any pending prune strikes
+    strikes: 0,
     updatedAt: new Date().toISOString(),
   }
   await env.SUBS.put(key, JSON.stringify(record))
+  console.log(existing ? 'subscribe: updated' : 'subscribe: new', key.slice(0, 8))
   return json({ ok: true })
 }
 
@@ -152,7 +162,9 @@ async function handleUnsubscribe(request: Request, env: Env): Promise<Response> 
   const body = await readBody(request)
   const endpoint = body?.endpoint
   if (typeof endpoint !== 'string') return json({ error: 'bad request' }, 400)
-  await env.SUBS.delete(await kvKey(endpoint))
+  const key = await kvKey(endpoint)
+  await env.SUBS.delete(key)
+  console.log('unsubscribe', key.slice(0, 8))
   return json({ ok: true })
 }
 
@@ -168,23 +180,33 @@ async function handleTest(request: Request, env: Env): Promise<Response> {
     tag: 'eat-what-test',
     topic: 'test',
   })
-  if (result === 'gone') {
-    await env.SUBS.delete(key)
+  console.log('test push', key.slice(0, 8), result.kind, result.status)
+  if (result.kind === 'gone') {
+    // Report it, but let the client heal by re-subscribing — don't hard-delete
     return json({ error: 'subscription expired' }, 410)
   }
-  return result === 'ok' ? json({ ok: true }) : json({ error: 'push failed' }, 502)
+  return result.kind === 'ok' ? json({ ok: true }) : json({ error: 'push failed' }, 502)
+}
+
+async function handleHealth(env: Env): Promise<Response> {
+  const health = await env.SUBS.get<CronHealth>(META_KEY, 'json')
+  return json({ ok: true, lastCron: health })
 }
 
 async function deliverDue(env: Env, now: Date): Promise<void> {
+  const health: CronHealth = { at: now.toISOString(), scanned: 0, due: 0, sent: 0, errors: 0, pruned: 0 }
   let cursor: string | undefined
   do {
     const page = await env.SUBS.list({ cursor })
     for (const { name: key } of page.keys) {
+      if (key.startsWith('_')) continue // metadata, not a subscription
       const stored = await env.SUBS.get<StoredSubscription>(key, 'json')
       if (!stored) continue
+      health.scanned++
 
       const due = dueMeals(stored.prefs, stored.lastSent ?? {}, now, stored.tz)
       if (!due.length) continue
+      health.due += due.length
 
       let gone = false
       for (const { meal, date } of due) {
@@ -193,23 +215,38 @@ async function deliverDue(env: Env, now: Date): Promise<void> {
           tag: `eat-what-${meal}`,
           topic: meal,
         })
-        if (result === 'gone') {
+        console.log('meal push', key.slice(0, 8), meal, result.kind, result.status)
+        if (result.kind === 'gone') {
           gone = true
           break
         }
-        if (result === 'ok') {
+        if (result.kind === 'ok') {
+          health.sent++
           stored.lastSent = { ...stored.lastSent, [meal]: date }
+          stored.strikes = 0
+        } else {
+          health.errors++
         }
       }
 
       if (gone) {
-        await env.SUBS.delete(key)
-      } else {
-        await env.SUBS.put(key, JSON.stringify(stored))
+        // Prune only after consecutive gone responses — a subscription that
+        // just hiccuped gets another chance next tick (dedup via lastSent)
+        stored.strikes = (stored.strikes ?? 0) + 1
+        if (stored.strikes >= PRUNE_STRIKES) {
+          await env.SUBS.delete(key)
+          health.pruned++
+          console.log('pruned dead subscription', key.slice(0, 8))
+          continue
+        }
       }
+      await env.SUBS.put(key, JSON.stringify(stored))
     }
     cursor = page.list_complete ? undefined : page.cursor
   } while (cursor)
+
+  await env.SUBS.put(META_KEY, JSON.stringify(health))
+  console.log('cron done', JSON.stringify(health))
 }
 
 export default {
@@ -218,6 +255,9 @@ export default {
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS_HEADERS })
     if (url.pathname === '/' && request.method === 'GET') {
       return json({ service: 'eat-what-push', ok: true })
+    }
+    if (url.pathname === '/health' && request.method === 'GET') {
+      return handleHealth(env)
     }
     if (url.pathname === '/subscribe' && request.method === 'POST') {
       return handleSubscribe(request, env)
