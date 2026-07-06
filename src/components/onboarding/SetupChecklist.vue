@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { QUOTA_CAPS } from '@/lib/places/quotas'
 import { validateGoogleKey } from '@/lib/places/validateKey'
 import { getCurrentLocation } from '@/composables/useOrigin'
 import { useSettingsStore } from '@/stores/settings'
@@ -19,8 +20,10 @@ const CONSOLE_LINKS = {
   project: 'https://console.cloud.google.com/projectcreate',
   library: 'https://console.cloud.google.com/apis/library/places.googleapis.com',
   credentials: 'https://console.cloud.google.com/apis/credentials',
-  quotas: 'https://console.cloud.google.com/apis/api/places.googleapis.com/quotas',
+  quotas: 'https://console.cloud.google.com/google/maps-apis/quotas',
 }
+
+const perMinuteList = QUOTA_CAPS.map((q) => `${q.metric} → ${q.perMinute}`).join(' · ')
 
 const origin = computed(() => `${location.origin}/*`)
 
@@ -81,6 +84,30 @@ function close(dismiss: boolean) {
               </span>
             </span>
           </label>
+          <!-- Step 3 detail: the exact caps to enter, per request type -->
+          <div v-if="step === 'cap'" class="mt-3 space-y-2 pl-8">
+            <p class="text-xs leading-relaxed text-stone-500 dark:text-stone-400">
+              {{ t('setup.capHow') }}
+            </p>
+            <ul class="space-y-1.5">
+              <li
+                v-for="q in QUOTA_CAPS"
+                :key="q.key"
+                class="rounded-lg bg-stone-100 px-2.5 py-1.5 dark:bg-stone-900"
+              >
+                <span class="flex items-baseline justify-between gap-2">
+                  <code class="text-[11px] font-semibold break-all">{{ q.metric }}</code>
+                  <span class="text-xs font-black whitespace-nowrap text-orange-600 dark:text-orange-400">{{ q.perDay }}</span>
+                </span>
+                <span class="mt-0.5 block text-[11px] leading-snug text-stone-500 dark:text-stone-400">
+                  {{ t(`setup.quota.${q.key}`) }}
+                </span>
+              </li>
+            </ul>
+            <p class="text-[11px] leading-relaxed text-stone-400 dark:text-stone-500">
+              🛑 {{ t('setup.capPerMinute', { caps: perMinuteList }) }}
+            </p>
+          </div>
           <div class="mt-2 flex flex-wrap gap-3 pl-8 text-xs">
             <template v-if="step === 'project'">
               <a :href="CONSOLE_LINKS.project" target="_blank" rel="noopener" class="font-semibold text-orange-600 underline dark:text-orange-400">{{ t('setup.openConsole') }} ↗</a>
