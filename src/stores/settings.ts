@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 
-import type { DrawConditions } from '@/types/models'
+import type { DrawConditions, NotificationPrefs } from '@/types/models'
 import { makeDefaultConditions } from '@/lib/draw/defaults'
 
 export type ThemePref = 'light' | 'dark' | 'system'
@@ -29,6 +29,13 @@ export const useSettingsStore = defineStore(
     // Starting point for every session's draw conditions
     const defaultConditions = ref<DrawConditions>(makeDefaultConditions())
 
+    // Meal notification schedule (Phase 2) — delivery lives on the push
+    // worker; this is the local editing copy, synced on change
+    const notifications = ref<NotificationPrefs>({
+      lunch: { enabled: false, time: '12:00', days: [1, 2, 3, 4, 5] },
+      dinner: { enabled: false, time: '18:00', days: [1, 2, 3, 4, 5, 6, 0] },
+    })
+
     // Onboarding checklist state
     const setupDismissed = ref(false)
     const setupTicks = ref({ project: false, restrict: false, cap: false })
@@ -43,6 +50,7 @@ export const useSettingsStore = defineStore(
       aiApiKey,
       aiModel,
       defaultConditions,
+      notifications,
       setupDismissed,
       setupTicks,
       setupOpen,
@@ -58,6 +66,7 @@ export const useSettingsStore = defineStore(
         'aiApiKey',
         'aiModel',
         'defaultConditions',
+        'notifications',
         'setupDismissed',
         'setupTicks',
       ],

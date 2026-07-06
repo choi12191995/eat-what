@@ -89,3 +89,17 @@ export interface PlaceSuggestion {
   label: string
   distanceMeters?: number
 }
+
+/** One meal's notification schedule (Phase 2). Times are device-local. */
+export interface MealNotifPref {
+  enabled: boolean
+  /** "HH:mm" */
+  time: string
+  /** JS weekday numbers, 0 = Sunday … 6 = Saturday */
+  days: number[]
+}
+
+export interface NotificationPrefs {
+  lunch: MealNotifPref
+  dinner: MealNotifPref
+}

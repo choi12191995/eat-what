@@ -1,0 +1,17 @@
+{
+  // Push notification worker — deploy with:  pnpm run worker:deploy
+  // Forks: create your own KV namespace (pnpm dlx wrangler kv namespace create SUBS)
+  // and VAPID keys (node scripts/generate-vapid-keys.mjs), then replace the values
+  // below and set the secret:  wrangler secret put VAPID_PRIVATE_KEY -c worker/wrangler.jsonc
+  "name": "eat-what-push",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-01",
+  "kv_namespaces": [{ "binding": "SUBS", "id": "d5d79400ed32429cbc00d605cbfb2329" }],
+  "triggers": { "crons": ["*/15 * * * *"] },
+  "vars": {
+    "VAPID_PUBLIC_KEY": "BE0mXKJg-sQWicgTiHLS6egp4VNj8-CgQTSjm87yO9HSISQPMHR89xynGFJj2zSbuw9o9cXxSpJzVW2T5MEJJr4",
+    // RFC 8292 allows an https: URL as the contact subject
+    "VAPID_SUBJECT": "https://eat-what.samsonchoi.hk"
+  },
+  "observability": { "enabled": true }
+}

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 import { usePreferredReducedMotion } from '@vueuse/core'
 import confetti from 'canvas-confetti'
 
@@ -75,6 +76,19 @@ async function onDraw() {
   haptics.tap()
   await startDraw()
 }
+
+// Notification deep link: /?draw=1 spins immediately
+const route = useRoute()
+const router = useRouter()
+watch(
+  () => route.query.draw,
+  (draw) => {
+    if (draw !== '1') return
+    void router.replace({ query: {} })
+    if (drawStore.phase === 'idle' || drawStore.phase === 'landed') void onDraw()
+  },
+  { immediate: true },
+)
 </script>
 
 <template>

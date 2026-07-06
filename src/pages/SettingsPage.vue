@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import AiSettings from '@/components/settings/AiSettings.vue'
 import BlocklistManager from '@/components/settings/BlocklistManager.vue'
 import DataControls from '@/components/settings/DataControls.vue'
+import NotificationSettings from '@/components/settings/NotificationSettings.vue'
 import { validateGoogleKey } from '@/lib/places/validateKey'
 import { useSettingsStore, type AppLocale, type ThemePref } from '@/stores/settings'
 
@@ -137,6 +138,7 @@ function clearKey() {
       </button>
     </section>
 
+    <NotificationSettings />
     <AiSettings />
     <BlocklistManager />
     <DataControls />
