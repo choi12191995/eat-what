@@ -83,12 +83,22 @@ async function onDraw() {
   await startDraw()
 }
 
-// Group draw: share the current wheel; friends each veto one, host spins
+// Group draw: share the current wheel; friends each veto one, host spins.
+// With no wheel yet, fetch candidates first (no local spin — the final
+// draw happens in the room).
 const roomBusy = ref(false)
 async function inviteFriends() {
-  if (roomBusy.value || drawStore.candidates.length < 2) return
+  if (roomBusy.value || busy.value) return
   roomBusy.value = true
   try {
+    if (drawStore.candidates.length < 2) {
+      const ok = await startDraw({ spin: false })
+      if (!ok) return
+      if (drawStore.candidates.length < 2) {
+        drawStore.errorKey = 'room.needMore'
+        return
+      }
+    }
     const created = await createRoom(drawStore.candidates, settings.locale)
     if (!created) {
       drawStore.errorKey = 'room.createFailed'
@@ -213,15 +223,6 @@ watch(
       🎉 {{ drawStore.winner.name }}
     </p>
 
-    <button
-      v-if="drawStore.phase === 'landed' && drawStore.candidates.length >= 2"
-      type="button"
-      class="rounded-full border border-violet-300 bg-violet-500/10 px-4 py-2 text-sm font-semibold text-violet-600 active:scale-95 disabled:opacity-50 dark:border-violet-800 dark:text-violet-300"
-      :disabled="roomBusy"
-      @click="inviteFriends"
-    >
-      {{ roomBusy ? '…' : '👥 ' + t('room.invite') }}
-    </button>
 
     <RelaxationHints
       v-if="!busy && drawStore.candidates.length === 0"
@@ -268,6 +269,15 @@ watch(
         <span v-else>{{ t('draw.cta') }}</span>
       </button>
     </div>
+
+    <button
+      type="button"
+      class="w-full max-w-sm rounded-2xl border border-violet-300 bg-violet-500/10 py-2.5 text-sm font-semibold text-violet-600 transition-all active:scale-95 disabled:opacity-50 dark:border-violet-800 dark:text-violet-300"
+      :disabled="busy || roomBusy"
+      @click="inviteFriends"
+    >
+      {{ roomBusy ? '🎡 …' : '👥 ' + t('room.invite') }}
+    </button>
   </div>
 
   <ConditionsDrawer />

@@ -118,7 +118,8 @@
     "winner": "The group has decided!",
     "share": "Share room link",
     "expired": "This room has expired or doesn't exist. Rooms live for 1 hour.",
-    "createFailed": "Couldn't create the room — try again."
+    "createFailed": "Couldn't create the room — try again.",
+    "needMore": "Not enough matches for a group draw — loosen a filter."
   },
   "weather": {
     "chip": {

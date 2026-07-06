@@ -33,8 +33,14 @@ export function useDraw() {
     return null
   }
 
-  async function startDraw() {
-    if (busy.value) return
+  /**
+   * Fetch + filter + pick. `spin: false` fills the wheel without spinning —
+   * used by group draw, where the final pick happens in the room.
+   * Returns whether at least one candidate landed on the wheel.
+   */
+  async function startDraw(opts: { spin?: boolean } = {}): Promise<boolean> {
+    const spin = opts.spin !== false
+    if (busy.value) return false
     drawStore.errorKey = null
     drawStore.showResult = false
     drawStore.relaxations = []
@@ -43,7 +49,7 @@ export function useDraw() {
       const origin = await resolveOrigin()
       if (!origin) {
         drawStore.phase = 'idle'
-        return
+        return false
       }
       const region = detectRegion(origin, 'HK')
       const provider = getProvider(settings.googleApiKey)
@@ -77,10 +83,19 @@ export function useDraw() {
       })
       drawStore.setOutcome(outcome, origin, region)
       drawStore.aiReason = null
+      if (outcome.candidates.length === 0) {
+        drawStore.phase = 'idle'
+        if (outcome.relaxations.length === 0) drawStore.errorKey = 'draw.noMatches'
+        return false
+      }
+      if (!spin) {
+        drawStore.phase = 'idle'
+        return true
+      }
       // Concierge: with a mood set and AI configured, the "random" winner is
       // AI-picked instead — the wheel still spins to it like any other draw.
       const mood = drawStore.mood.trim()
-      if (outcome.candidates.length > 0 && mood) {
+      if (mood) {
         const pick = await conciergePick(
           { baseUrl: settings.aiBaseUrl, apiKey: settings.aiApiKey, model: settings.aiModel },
           outcome.candidates,
@@ -96,12 +111,8 @@ export function useDraw() {
           }
         }
       }
-      if (outcome.candidates.length > 0) {
-        drawStore.phase = 'spinning'
-      } else {
-        drawStore.phase = 'idle'
-        if (outcome.relaxations.length === 0) drawStore.errorKey = 'draw.noMatches'
-      }
+      drawStore.phase = 'spinning'
+      return true
     } catch (e) {
       drawStore.phase = 'idle'
       if (e instanceof GooglePlacesError) {
@@ -114,6 +125,7 @@ export function useDraw() {
       } else {
         drawStore.errorKey = 'draw.error'
       }
+      return false
     }
   }
 

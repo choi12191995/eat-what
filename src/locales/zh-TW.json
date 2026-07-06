@@ -118,7 +118,8 @@
     "winner": "大家決定咗喇！",
     "share": "分享房間連結",
     "expired": "房間已過期或唔存在。房間有效期為 1 小時。",
-    "createFailed": "開唔到房間——請再試一次。"
+    "createFailed": "開唔到房間——請再試一次。",
+    "needMore": "符合嘅餐廳唔夠開房——放寬啲條件先。"
   },
   "weather": {
     "chip": {
