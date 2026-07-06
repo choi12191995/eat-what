@@ -98,7 +98,7 @@ async function sendPush(
   env: Env,
   stored: StoredSubscription,
   copy: NotificationCopy,
-  extra: { url: string; tag: string; topic: string },
+  extra: { url: string; tag: string },
 ): Promise<SendResult> {
   try {
     const payload = await buildPushPayload(
@@ -110,7 +110,11 @@ async function sendPush(
           tag: extra.tag,
           lang: stored.locale,
         }),
-        options: { ttl: 1800, urgency: 'normal', topic: extra.topic },
+        // No Topic header: Apple's push service rejects some topic values
+        // outright ({"reason":"BadWebPushTopic"} — e.g. 'lunch' failed while
+        // 'test' passed). Its only benefit is collapsing undelivered
+        // duplicates, which the 30-min TTL already bounds.
+        options: { ttl: 1800, urgency: 'normal' },
       },
       stored.subscription,
       {
@@ -121,6 +125,11 @@ async function sendPush(
     )
     const res = await fetch(stored.subscription.endpoint, payload)
     if (res.status === 404 || res.status === 410) return { kind: 'gone', status: res.status }
+    if (!res.ok) {
+      // Push services put the rejection reason in the body — log it, this
+      // is the difference between a 5-minute fix and a blind hunt
+      console.log('push rejected', res.status, (await res.text()).slice(0, 160))
+    }
     return { kind: res.ok ? 'ok' : 'error', status: res.status }
   } catch (err) {
     console.log('sendPush threw', String(err))
@@ -178,7 +187,6 @@ async function handleTest(request: Request, env: Env): Promise<Response> {
   const result = await sendPush(env, stored, testCopy(stored.locale), {
     url: '/',
     tag: 'eat-what-test',
-    topic: 'test',
   })
   console.log('test push', key.slice(0, 8), result.kind, result.status)
   if (result.kind === 'gone') {
@@ -213,7 +221,6 @@ async function deliverDue(env: Env, now: Date): Promise<void> {
         const result = await sendPush(env, stored, mealCopy(meal, stored.locale), {
           url: '/?draw=1',
           tag: `eat-what-${meal}`,
-          topic: meal,
         })
         console.log('meal push', key.slice(0, 8), meal, result.kind, result.status)
         if (result.kind === 'gone') {
