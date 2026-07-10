@@ -6,6 +6,15 @@
   "name": "eat-what-push",
   "main": "src/index.ts",
   "compatibility_date": "2026-07-01",
+  // First-party hostname: some cellular carriers DNS-block *.workers.dev
+  // wholesale, which killed rooms for a few users. Single-tier subdomain on
+  // purpose — the free plan's Universal SSL only covers one level. Cloudflare
+  // creates the DNS record + certificate automatically on deploy.
+  // Forks: replace with your own domain, or delete this line to use workers.dev.
+  "routes": [{ "pattern": "eat-what-api.samsonchoi.hk", "custom_domain": true }],
+  // Keep workers.dev alive: app builds shipped before the custom domain still
+  // point at it (installed PWAs update lazily)
+  "workers_dev": true,
   "kv_namespaces": [{ "binding": "SUBS", "id": "d5d79400ed32429cbc00d605cbfb2329" }],
   "durable_objects": { "bindings": [{ "name": "ROOMS", "class_name": "RoomDO" }] },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RoomDO"] }],

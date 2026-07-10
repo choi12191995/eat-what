@@ -6,7 +6,9 @@
  * The public key is public by design — the private half lives only in the
  * worker's secrets.
  */
-export const PUSH_SERVER_URL = 'https://eat-what-push.sc-d46.workers.dev'
+// First-party domain — several cellular carriers block *.workers.dev, which
+// broke rooms on mobile data. The workers.dev URL still works as a fallback.
+export const PUSH_SERVER_URL = 'https://eat-what-api.samsonchoi.hk'
 
 export const PUSH_VAPID_PUBLIC_KEY =
   'BE0mXKJg-sQWicgTiHLS6egp4VNj8-CgQTSjm87yO9HSISQPMHR89xynGFJj2zSbuw9o9cXxSpJzVW2T5MEJJr4'
