@@ -21,13 +21,6 @@ const languages: { value: AppLocale; label: string }[] = [
 const keyDraft = ref(settings.googleApiKey)
 const keyStatus = ref<'idle' | 'checking' | 'valid' | 'invalid' | 'network'>('idle')
 
-// Signed .shortcut (public/eatwhat-siri.shortcut) — Shortcuts exists on
-// iOS/iPadOS/macOS only, so hide the section elsewhere
-const isApplePlatform = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent)
-const siriInstallUrl = `shortcuts://import-shortcut?url=${encodeURIComponent(
-  `${location.origin}/eatwhat-siri.shortcut`,
-)}&name=${encodeURIComponent('食乜好')}`
-
 async function saveKey() {
   const key = keyDraft.value.trim()
   if (!key) return
@@ -146,21 +139,6 @@ function clearKey() {
     </section>
 
     <NotificationSettings />
-
-    <section v-if="isApplePlatform" class="mb-8">
-      <h2 class="mb-2 text-sm font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400">
-        🎤 {{ t('settings.siri.title') }}
-      </h2>
-      <p class="mb-2 text-xs text-stone-500 dark:text-stone-400">
-        {{ t('settings.siri.note') }}
-      </p>
-      <a
-        :href="siriInstallUrl"
-        class="inline-block rounded-xl border border-orange-300 bg-orange-500/10 px-4 py-2.5 text-sm font-semibold text-orange-600 active:scale-95 dark:border-orange-800 dark:text-orange-400"
-      >
-        ⬇️ {{ t('settings.siri.install') }}
-      </a>
-    </section>
 
     <AiSettings />
     <BlocklistManager />

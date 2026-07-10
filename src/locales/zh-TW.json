@@ -288,11 +288,6 @@
       "day5": "五",
       "day6": "六"
     },
-    "siri": {
-      "title": "Siri 捷徑",
-      "note": "安裝捷徑後，只要講「Hey Siri，食乜好」App 就會自動打開並立即抽選。",
-      "install": "安裝 Siri 捷徑"
-    },
     "blocklist": {
       "title": "拒絕往來名單",
       "empty": "目前是空的——可以在結果卡片把餐廳加入。",

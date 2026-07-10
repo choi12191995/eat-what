@@ -288,11 +288,6 @@
       "day5": "Fr",
       "day6": "Sa"
     },
-    "siri": {
-      "title": "Siri shortcut",
-      "note": "Install the shortcut, then just say “Hey Siri, 食乜好” — the app opens and spins immediately.",
-      "install": "Install Siri shortcut"
-    },
     "blocklist": {
       "title": "Never-suggest list",
       "empty": "Empty — block places from their result card.",
