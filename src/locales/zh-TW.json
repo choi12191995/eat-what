@@ -346,7 +346,7 @@
   "diary": {
     "title": "我嘅食記",
     "myRating": "我嘅評分",
-    "myRatingHint": "你嘅評分大過 Google — 篩選同「常去嗰啲」抽法都以你為準。",
+    "myRatingHint": "⭐4–5 星級篩選必定通過 · ⭐3 交返畀 Google 決定 · ⭐1–2 開咗星級篩選時會隱藏呢間。",
     "mineShort": "我嘅 {n}★",
     "note": "食咗乜",
     "notePlaceholder": "食咗乜？好唔好食？下次想試乜？",
@@ -359,6 +359,11 @@
     "closed": "已永久結業",
     "closedHint": "剔咗之後，每次抽都會自動跳過呢間。",
     "save": "儲存食記",
-    "priceUnset": "未記錄"
+    "priceUnset": "未記錄",
+    "star1": "唔會再嚟",
+    "star2": "麻麻地",
+    "star3": "一般",
+    "star4": "好食",
+    "star5": "至愛"
   }
 }

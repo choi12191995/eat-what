@@ -346,7 +346,7 @@
   "diary": {
     "title": "My food diary",
     "myRating": "My rating",
-    "myRatingHint": "Yours outranks Google's — filters and the favourites draw use it.",
+    "myRatingHint": "4–5★ always pass the rating filter · 3★ leaves it to Google · 1–2★ hide it whenever a rating filter is on.",
     "mineShort": "mine {n}★",
     "note": "What I ate",
     "notePlaceholder": "What did you eat? Any good? What to try next time?",
@@ -359,6 +359,11 @@
     "closed": "Permanently closed",
     "closedHint": "Once ticked, every draw silently skips this place.",
     "save": "Save diary",
-    "priceUnset": "not recorded"
+    "priceUnset": "not recorded",
+    "star1": "Never again",
+    "star2": "Meh",
+    "star3": "Okay",
+    "star4": "Good",
+    "star5": "Love it"
   }
 }

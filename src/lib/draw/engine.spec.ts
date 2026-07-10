@@ -6,6 +6,7 @@ import { makeDefaultConditions } from './defaults'
 import {
   ALL_FOOD_TYPES,
   conditionsFingerprint,
+  effectiveRating,
   filterPool,
   queryRadiusFor,
   runDraw,
@@ -148,11 +149,38 @@ describe('filterPool with place notes (diary corrections)', () => {
     expect(out.map((r) => r.id)).toEqual(['alive'])
   })
 
-  it('my rating outranks Google for the minRating filter', () => {
-    const raw = [place({ id: 'p1', rating: 3.2 })]
-    expect(filterPool(raw, cond({ minRating: 4.0 }), notesCtx('p1', { myRating: 5 }))).toHaveLength(1)
-    const rawGood = [place({ id: 'p1', rating: 4.8 })]
-    expect(filterPool(rawGood, cond({ minRating: 4.0 }), notesCtx('p1', { myRating: 2 }))).toHaveLength(0)
+  it('diary stars are calibrated verdicts, not raw substitutes for Google stars', () => {
+    const modest = [place({ id: 'p1', rating: 3.2 })] // Google below every filter choice
+    const strong = [place({ id: 'p1', rating: 4.8 })]
+
+    // 5★ 至愛: passes even the strictest filter
+    expect(filterPool(modest, cond({ minRating: 4.5 }), notesCtx('p1', { myRating: 5 }))).toHaveLength(1)
+    // 4★ 好食: guarantees 4.0 — passes ★4.0, but ★4.5 still needs Google to agree
+    expect(filterPool(modest, cond({ minRating: 4.0 }), notesCtx('p1', { myRating: 4 }))).toHaveLength(1)
+    expect(filterPool(modest, cond({ minRating: 4.5 }), notesCtx('p1', { myRating: 4 }))).toHaveLength(0)
+    expect(filterPool(strong, cond({ minRating: 4.5 }), notesCtx('p1', { myRating: 4 }))).toHaveLength(1)
+    // 3★ 一般 abstains: the crowd decides either way
+    expect(filterPool(strong, cond({ minRating: 4.5 }), notesCtx('p1', { myRating: 3 }))).toHaveLength(1)
+    expect(filterPool(modest, cond({ minRating: 3.5 }), notesCtx('p1', { myRating: 3 }))).toHaveLength(0)
+    // 1–2★ condemn: fails every filter no matter how Google gushes
+    expect(filterPool(strong, cond({ minRating: 3.5 }), notesCtx('p1', { myRating: 2 }))).toHaveLength(0)
+    expect(filterPool(strong, cond({ minRating: 3.5 }), notesCtx('p1', { myRating: 1 }))).toHaveLength(0)
+    // an endorsement rescues a place Google has no rating for at all
+    expect(filterPool([place({ id: 'p1' })], cond({ minRating: 4.0 }), notesCtx('p1', { myRating: 4 }))).toHaveLength(1)
+    // no filter on → verdicts hide nothing (blacklist is the ban, not stars)
+    expect(filterPool(strong, cond({ minRating: null }), notesCtx('p1', { myRating: 1 }))).toHaveLength(1)
+  })
+
+  it('effectiveRating maps the verdict table', () => {
+    expect(effectiveRating(3.2, 5)).toBe(5)
+    expect(effectiveRating(3.2, 4)).toBe(4)
+    expect(effectiveRating(4.6, 4)).toBe(4.6) // Google can only raise an endorsement
+    expect(effectiveRating(4.2, 3)).toBe(4.2) // abstain
+    expect(effectiveRating(4.8, 2)).toBe(3)
+    expect(effectiveRating(4.8, 1)).toBe(2)
+    expect(effectiveRating(undefined, 4)).toBe(4)
+    expect(effectiveRating(undefined, 3)).toBeUndefined()
+    expect(effectiveRating(4.1, undefined)).toBe(4.1)
   })
 
   it('diary spend beats Google price data in the budget filter', () => {

@@ -127,13 +127,13 @@ async function save() {
             type="button"
             class="p-1 text-2xl transition-transform active:scale-90"
             :class="star <= form.myRating ? '' : 'opacity-25 grayscale'"
-            :aria-label="`${star}★`"
+            :aria-label="`${star}★ ${t(`diary.star${star}`)}`"
             @click="form.myRating = form.myRating === star ? 0 : star"
           >
             ⭐
           </button>
           <span v-if="form.myRating" class="ml-2 text-sm font-bold text-amber-600 dark:text-amber-400">
-            {{ form.myRating }}/5
+            {{ t(`diary.star${form.myRating}`) }}
           </span>
         </div>
         <p class="mt-1 text-xs text-stone-400 dark:text-stone-500">{{ t('diary.myRatingHint') }}</p>
