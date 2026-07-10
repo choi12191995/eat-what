@@ -36,6 +36,8 @@ export interface RoomView {
   result: { placeId: string } | null
   locale: string
   createdAt: string
+  /** Epoch ms of the planned meal when the host drew for a future time */
+  plannedAt?: number
 }
 
 const VOTER_KEY = 'ew.voterId'
@@ -62,6 +64,18 @@ export function roomUrl(roomId: string): string {
   return `${location.origin}/room/${roomId}`
 }
 
+/**
+ * Pull a room code out of scanned/typed input: a bare 6-char code or any
+ * URL whose path ends in /room/<code>. We never navigate to the scanned
+ * URL itself — only the extracted code, always on our own origin.
+ */
+export function parseRoomCode(text: string): string | null {
+  const trimmed = text.trim()
+  const fromUrl = /\/room\/([A-Za-z0-9]{6})(?:[/?#]|$)/.exec(trimmed)
+  const raw = fromUrl?.[1] ?? trimmed
+  return /^[A-Za-z0-9]{6}$/.test(raw) ? raw.toUpperCase() : null
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T | null> {
   try {
     const res = await fetch(`${PUSH_SERVER_URL}${path}`, init)
@@ -75,9 +89,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T | null> {
 export async function createRoom(
   candidates: Restaurant[],
   locale: string,
+  plannedAt?: number,
 ): Promise<{ roomId: string; hostToken: string } | null> {
   const payload = {
     locale,
+    ...(plannedAt ? { plannedAt } : {}),
     candidates: candidates.slice(0, 10).map((r) => ({
       id: r.id,
       name: r.name,

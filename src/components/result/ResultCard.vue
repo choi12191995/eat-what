@@ -2,9 +2,11 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { LatLng, Restaurant } from '@/types/models'
+import type { LatLng, PlaceNote, Restaurant } from '@/types/models'
 import ModalShell from '@/components/ui/ModalShell.vue'
 import RatingStars from '@/components/ui/RatingStars.vue'
+import { createPlaceNotesRepo } from '@/lib/db/placeNotesRepo'
+import { getDb } from '@/lib/db/schema'
 import AiBlurb from './AiBlurb.vue'
 import { useShareResult } from '@/composables/useShareResult'
 import { drawCardImage, shareCardImage } from '@/lib/share/cardImage'
@@ -31,7 +33,7 @@ const emit = defineEmits<{ close: [] }>()
 const { t, locale } = useI18n()
 const drawStore = useDrawStore()
 const settings = useSettingsStore()
-const { accept, blockCurrent } = useDraw()
+const { accept, blockCurrent, reportClosed, respin } = useDraw()
 const { share, copied } = useShareResult()
 
 const readonly = computed(() => props.restaurant !== undefined)
@@ -47,6 +49,16 @@ const origin = computed<LatLng | null>(() => (readonly.value ? null : drawStore.
 
 const photoFailed = ref(false)
 watch(r, () => (photoFailed.value = false))
+
+// Own diary entry for this place, if any — "you rated this 4★ last time"
+const myNote = ref<PlaceNote | null>(null)
+watch(
+  r,
+  async (cur) => {
+    myNote.value = cur ? ((await createPlaceNotesRepo(getDb()).get(cur.id)) ?? null) : null
+  },
+  { immediate: true },
+)
 
 // Photos are the scarcest quota (1,000 free/month) — load exactly one,
 // only for the winner, at a capped width.
@@ -127,7 +139,19 @@ async function shareAsImage() {
           <h2 class="text-2xl font-black tracking-tight">{{ r.name }}</h2>
           <div class="mt-1 flex flex-wrap items-center gap-2">
             <RatingStars :rating="r.rating" :count="r.userRatingCount" />
+            <span
+              v-if="myNote?.myRating"
+              class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+            >
+              ⭐ {{ t('diary.mineShort', { n: myNote.myRating }) }}
+            </span>
           </div>
+          <p
+            v-if="myNote?.note"
+            class="mt-1 truncate text-xs text-stone-400 italic dark:text-stone-500"
+          >
+            ✍️ {{ myNote.note }}
+          </p>
         </div>
 
         <div class="flex flex-wrap items-center gap-2 text-sm">
@@ -229,7 +253,7 @@ async function shareAsImage() {
           <button
             type="button"
             class="flex-1 rounded-xl border border-stone-300 px-3 py-3 text-sm font-semibold text-stone-600 active:scale-95 dark:border-stone-700 dark:text-stone-300"
-            @click="drawStore.respin()"
+            @click="respin()"
           >
             🔁 {{ t('result.respin') }}
           </button>
@@ -241,14 +265,22 @@ async function shareAsImage() {
             😋 {{ t('result.accept') }}
           </button>
         </div>
-        <button
-          v-if="!readonly"
-          type="button"
-          class="w-full pb-1 text-center text-xs text-stone-400 underline dark:text-stone-500"
-          @click="blockCurrent()"
-        >
-          🚫 {{ t('result.never') }}
-        </button>
+        <div v-if="!readonly" class="flex justify-center gap-5 pb-1">
+          <button
+            type="button"
+            class="text-xs text-stone-400 underline dark:text-stone-500"
+            @click="blockCurrent()"
+          >
+            🚫 {{ t('result.never') }}
+          </button>
+          <button
+            type="button"
+            class="text-xs text-stone-400 underline dark:text-stone-500"
+            @click="reportClosed()"
+          >
+            ⛔ {{ t('result.reportClosed') }}
+          </button>
+        </div>
         <button
           v-else
           type="button"

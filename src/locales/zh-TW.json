@@ -29,7 +29,8 @@
       "dropMinRating": "取消評分限制",
       "dropBudget": "不限預算",
       "dropRecentExclusion": "允許最近去過的店",
-      "widenRadius": "擴大到 {radius}"
+      "widenRadius": "擴大到 {radius}",
+      "dropRequirePrice": "接受冇價錢資料嘅餐廳"
     }
   },
   "conditions": {
@@ -78,7 +79,12 @@
     "any": "不限",
     "reset": "重設",
     "saveDefault": "設為預設",
-    "done": "完成"
+    "done": "完成",
+    "arriveDate": "邊日去",
+    "today": "今日",
+    "planHint": "呢餐會儲存做未來計劃 — 去到嗰日之前，喺紀錄嘅「📅 即將嘅計劃」度搵佢。",
+    "budgetRange": "拉兩邊設定價錢範圍",
+    "requirePrice": "只要有價錢資料嘅餐廳"
   },
   "result": {
     "openNow": "營業中",
@@ -93,10 +99,12 @@
     "shareImage": "圖片",
     "copied": "已複製",
     "never": "以後不要再抽到這家",
-    "aiPick": "AI 之選"
+    "aiPick": "AI 之選",
+    "reportClosed": "已結業？"
   },
   "common": {
-    "close": "關閉"
+    "close": "關閉",
+    "cancel": "取消"
   },
   "cuisine": {
     "cantonese": "粵菜",
@@ -136,7 +144,21 @@
     "savedToHistory": "已喺紀錄入面",
     "expired": "房間已過期或唔存在。房間有效期為 1 小時。",
     "createFailed": "開唔到房間——請再試一次。",
-    "needMore": "符合嘅餐廳唔夠開房——放寬啲條件先。"
+    "needMore": "符合嘅餐廳唔夠開房——放寬啲條件先。",
+    "joinCta": "有房號？加入朋友嘅房",
+    "joinTitle": "加入房間",
+    "joinPlaceholder": "輸入 6 位房號",
+    "join": "加入",
+    "joinInvalid": "房號係 6 位英文／數字",
+    "joinNotFound": "搵唔到呢個房 — 房間 1 小時後會自動消失",
+    "joinHint": "喺 app 入面加入，抽嘅結果先可以儲存落呢部機嘅紀錄。",
+    "cameraDenied": "用唔到相機 — 直接輸入房號啦",
+    "scan": "掃朋友嘅 QR Code",
+    "scanStop": "停止掃描",
+    "qr": "QR Code",
+    "qrHint": "用相機 App 掃 → 開瀏覽器；喺食乜好 app 入面㩒「輸入房號」再掃 → 直接喺 app 入面加入。",
+    "qrFailed": "整唔到 QR Code…用返上面個房號啦",
+    "plannedFor": "計劃：{t}"
   },
   "weather": {
     "chip": {
@@ -207,7 +229,8 @@
     "groupBadge": "朋友一齊抽嘅結果",
     "statTotal": "餐已決定",
     "statPlaces": "間食過",
-    "statStreak": "天連續"
+    "statStreak": "天連續",
+    "upcoming": "即將嘅計劃"
   },
   "pwa": {
     "iosTitle": "安裝食乜好",
@@ -316,5 +339,22 @@
     "openQuotas": "開啟配額頁",
     "useDemo": "先用示範模式",
     "done": "完成"
+  },
+  "diary": {
+    "title": "我嘅食記",
+    "myRating": "我嘅評分",
+    "myRatingHint": "你嘅評分大過 Google — 篩選同「常去嗰啲」抽法都以你為準。",
+    "mineShort": "我嘅 {n}★",
+    "note": "食咗乜",
+    "notePlaceholder": "食咗乜？好唔好食？下次想試乜？",
+    "price": "每人使費（修正）",
+    "priceHint": "揀返真實價位，之後預算篩選會信你嗰個。",
+    "cuisines": "菜式修正",
+    "cuisinesHint": "Google 分類錯咗？揀返啱嘅（最多 3 個）。",
+    "keywords": "啱佢嘅口味標籤",
+    "blacklist": "永不再抽呢間",
+    "closed": "已永久結業",
+    "closedHint": "剔咗之後，每次抽都會自動跳過呢間。",
+    "save": "儲存食記"
   }
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import confetti from 'canvas-confetti'
@@ -20,7 +20,7 @@ import { createHistoryRepo } from '@/lib/db/historyRepo'
 import { getDb } from '@/lib/db/schema'
 import { useHaptics } from '@/composables/useHaptics'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const route = useRoute()
 const haptics = useHaptics()
 
@@ -93,20 +93,55 @@ async function finalDraw() {
   spinning.value = false
 }
 
-// "Add to my history" — works for host AND friends via the room's snapshot
+// "Add to my history" — works for host AND friends via the room's snapshot.
+// A planned room (host drew for a future time) saves as an upcoming plan.
 const saveState = ref<'idle' | 'saved'>('idle')
 async function addToHistory() {
   const snap = winner.value?.r
   if (!snap || saveState.value === 'saved') return
   const restaurant: Restaurant = { ...snap, photoNames: [], fetchedAt: Date.now() }
   try {
-    await createHistoryRepo(getDb()).addAccepted(restaurant, makeDefaultConditions(), 'group')
+    await createHistoryRepo(getDb()).addAccepted(restaurant, makeDefaultConditions(), {
+      source: 'group',
+      ...(room.value?.plannedAt ? { plannedAt: room.value.plannedAt } : {}),
+    })
     saveState.value = 'saved'
     haptics.tap()
   } catch {
     // history is best-effort
   }
 }
+
+const plannedLabel = computed(() => {
+  const at = room.value?.plannedAt
+  if (!at) return null
+  return new Intl.DateTimeFormat(locale.value, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(at)
+})
+
+// QR block: friends inside the app scan it (or type the code) to join —
+// the iOS-proof path, since tapped links always open the browser instead
+// of the installed PWA. External camera apps still get the URL → browser.
+const qrOpen = ref(false)
+const qrCanvas = ref<HTMLCanvasElement | null>(null)
+const qrFailed = ref(false)
+watch(qrOpen, async (open) => {
+  if (!open) return
+  await nextTick()
+  try {
+    const QR = await import('qrcode')
+    if (qrCanvas.value) {
+      await QR.toCanvas(qrCanvas.value, roomUrl(roomId.value), { width: 208, margin: 1 })
+    }
+  } catch {
+    qrFailed.value = true
+  }
+})
 
 async function shareRoom() {
   const url = roomUrl(roomId.value)
@@ -131,7 +166,14 @@ async function shareRoom() {
 <template>
   <div class="mx-auto max-w-md px-6 pt-10">
     <h1 class="mb-1 text-2xl font-bold">👥 {{ t('room.title') }}</h1>
-    <p class="mb-5 text-xs text-stone-400 dark:text-stone-500">#{{ roomId }}</p>
+    <p class="mb-1 text-xs text-stone-400 dark:text-stone-500">#{{ roomId }}</p>
+    <p
+      v-if="plannedLabel"
+      class="mb-4 inline-block rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-semibold text-sky-700 dark:bg-sky-950 dark:text-sky-300"
+    >
+      📅 {{ t('room.plannedFor', { t: plannedLabel }) }}
+    </p>
+    <div v-else class="mb-4" />
 
     <p v-if="notFound" class="text-sm text-stone-500 dark:text-stone-400">
       {{ t('room.expired') }}
@@ -225,13 +267,41 @@ async function shareRoom() {
         >
           {{ spinning ? '🎡 …' : t('room.finalSpin') }}
         </button>
-        <button
-          type="button"
-          class="w-full rounded-2xl border border-stone-300 py-3 text-sm font-semibold text-stone-600 dark:border-stone-700 dark:text-stone-300"
-          @click="shareRoom"
+        <div class="flex gap-2">
+          <button
+            type="button"
+            class="flex-1 rounded-2xl border border-stone-300 py-3 text-sm font-semibold text-stone-600 dark:border-stone-700 dark:text-stone-300"
+            @click="shareRoom"
+          >
+            {{ copied ? '✅ ' + t('result.copied') : '🔗 ' + t('room.share') }}
+          </button>
+          <button
+            type="button"
+            class="flex-1 rounded-2xl border py-3 text-sm font-semibold"
+            :class="
+              qrOpen
+                ? 'border-orange-400 bg-orange-500/10 text-orange-600 dark:text-orange-400'
+                : 'border-stone-300 text-stone-600 dark:border-stone-700 dark:text-stone-300'
+            "
+            @click="qrOpen = !qrOpen"
+          >
+            📱 {{ t('room.qr') }}
+          </button>
+        </div>
+
+        <div
+          v-if="qrOpen"
+          class="mt-3 flex flex-col items-center gap-2 rounded-3xl border border-stone-200 p-5 text-center dark:border-stone-800"
         >
-          {{ copied ? '✅ ' + t('result.copied') : '🔗 ' + t('room.share') }}
-        </button>
+          <!-- white pad keeps the code scannable in dark mode -->
+          <div class="rounded-2xl bg-white p-3 shadow-sm">
+            <canvas ref="qrCanvas" class="block h-52 w-52" />
+          </div>
+          <p class="text-lg font-black tracking-[0.2em]">{{ roomId }}</p>
+          <p class="max-w-xs text-xs text-stone-400 dark:text-stone-500">
+            {{ qrFailed ? t('room.qrFailed') : t('room.qrHint') }}
+          </p>
+        </div>
       </div>
     </template>
   </div>

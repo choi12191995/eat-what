@@ -91,6 +91,41 @@ describe('historyRepo', () => {
   })
 })
 
+describe('historyRepo planned draws', () => {
+  it('future plans live in upcoming(), not the timeline', async () => {
+    let t = new Date('2026-07-10T15:00:00').getTime()
+    const repo = createHistoryRepo(freshDb(), () => t)
+    await repo.addAccepted(restaurant('now'), makeDefaultConditions())
+    const monday = new Date('2026-07-13T19:00:00').getTime()
+    await repo.addAccepted(restaurant('plan'), makeDefaultConditions(), { plannedAt: monday })
+
+    const up = await repo.upcoming()
+    expect(up.map((r) => r.restaurant.id)).toEqual(['plan'])
+    expect(up[0]!.meal).toBe('dinner') // meal derived from the planned hour
+    const groups = await repo.listGroupedByDay()
+    expect(groups.flatMap((g) => g.records.map((r) => r.restaurant.id))).toEqual(['now'])
+
+    // …until the day passes: then it files under the PLANNED day
+    t = new Date('2026-07-14T09:00:00').getTime()
+    expect(await repo.upcoming()).toHaveLength(0)
+    const later = await repo.listGroupedByDay()
+    expect(later.map((g) => g.day)).toEqual(['2026-07-13', '2026-07-10'])
+    expect(later[0]!.records[0]!.restaurant.id).toBe('plan')
+  })
+
+  it('group source and plannedAt persist together', async () => {
+    const t = new Date('2026-07-10T15:00:00').getTime()
+    const repo = createHistoryRepo(freshDb(), () => t)
+    await repo.addAccepted(restaurant('g'), makeDefaultConditions(), {
+      source: 'group',
+      plannedAt: t + 60 * 60 * 1000,
+    })
+    const up = await repo.upcoming()
+    expect(up[0]!.source).toBe('group')
+    expect(up[0]!.plannedAt).toBe(t + 60 * 60 * 1000)
+  })
+})
+
 describe('blocklistRepo', () => {
   it('adds, lists, removes and reports ids', async () => {
     const repo = createBlocklistRepo(freshDb(), () => 1)

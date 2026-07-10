@@ -7,7 +7,7 @@
 import type { DrawConditions, DrawStyle, PriceLevel } from '@/types/models'
 import { CUISINES, type CuisineId } from '@/lib/places/cuisines'
 import { KEYWORD_GROUPS, keywordTagById, MAX_KEYWORD_TAGS } from '@/lib/places/keywords'
-import { MIN_RATING_CHOICES, RADIUS_STEPS } from '@/lib/draw/defaults'
+import { MIN_RATING_CHOICES, RADIUS_MAX, RADIUS_MIN, RADIUS_SLIDER_STEP } from '@/lib/draw/defaults'
 import { minutesFromHHmm } from '@/lib/places/openingHours'
 
 export interface AiConditionPatch {
@@ -18,6 +18,7 @@ export interface AiConditionPatch {
   radiusMeters?: number
   openNowOnly?: boolean
   arriveAt?: string | null
+  arriveDate?: string | null
   minRating?: number | null
   partySize?: number
   drawStyle?: DrawStyle
@@ -31,11 +32,17 @@ interface ChatMessage {
   content: string
 }
 
-export function conditionsMessages(utterance: string, locale: string): ChatMessage[] {
+export function conditionsMessages(
+  utterance: string,
+  locale: string,
+  now: Date = new Date(),
+): ChatMessage[] {
   const cuisineList = CUISINES.map((c) => c.id).join(', ')
   const keywordList = KEYWORD_GROUPS.flatMap((g) =>
     g.tags.map((t) => `${t.id}(${t.q['zh-TW']})`),
   ).join(', ')
+  const todayIso = `${now.getFullYear()}-${`${now.getMonth() + 1}`.padStart(2, '0')}-${`${now.getDate()}`.padStart(2, '0')}`
+  const weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][now.getDay()]
   const system = `You convert a diner's natural-language request into restaurant draw filters.
 Reply with ONLY a strict JSON object — no prose, no code fences.
 Include ONLY the fields the user actually expressed; omit everything else.
@@ -45,9 +52,10 @@ Fields:
 - "cuisinesExclude": same vocabulary, for things the user refuses
 - "keywords": array (max ${MAX_KEYWORD_TAGS}) from [${keywordList}]
 - "budgetLevels": array of 1-4 (1=cheapest). "平/cheap"→[1,2], "貴/fancy"→[3,4]
-- "radiusMeters": one of [${RADIUS_STEPS.join(', ')}]. "近/close"→500, "行遠啲/anywhere"→2000
+- "radiusMeters": integer ${RADIUS_MIN}-${RADIUS_MAX} (meters). "近/close"→500, "行遠啲/anywhere"→2000
 - "openNowOnly": boolean
 - "arriveAt": "HH:mm" 24h, when they mention eating at a specific later time (also set openNowOnly false)
+- "arriveDate": "YYYY-MM-DD" when they name a future day ("下星期一"/"next Friday"); ALWAYS give arriveAt with it (dinner→"19:00", lunch→"12:30" if unsaid). Today is ${todayIso} (${weekday}).
 - "minRating": one of [${MIN_RATING_CHOICES.join(', ')}] or null to clear
 - "partySize": integer 1-12
 - "drawStyle": "uniform" | "favor" (their usual places) | "explore" (somewhere new)
@@ -104,13 +112,21 @@ export function sanitizeAiConditions(raw: unknown): AiConditionPatch | null {
   }
 
   if (typeof r.radiusMeters === 'number' && Number.isFinite(r.radiusMeters)) {
-    patch.radiusMeters = snapTo(RADIUS_STEPS, r.radiusMeters)
+    const snapped = Math.round(r.radiusMeters / RADIUS_SLIDER_STEP) * RADIUS_SLIDER_STEP
+    patch.radiusMeters = Math.min(RADIUS_MAX, Math.max(RADIUS_MIN, snapped))
   }
   if (typeof r.openNowOnly === 'boolean') patch.openNowOnly = r.openNowOnly
-  if (r.arriveAt === null) patch.arriveAt = null
-  else if (typeof r.arriveAt === 'string' && minutesFromHHmm(r.arriveAt) !== null) {
+  if (r.arriveAt === null) {
+    patch.arriveAt = null
+    patch.arriveDate = null
+  } else if (typeof r.arriveAt === 'string' && minutesFromHHmm(r.arriveAt) !== null) {
     patch.arriveAt = r.arriveAt
     patch.openNowOnly = false // arrival time only applies with openNow off
+    // A planned DAY only makes sense alongside a time
+    if (typeof r.arriveDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.arriveDate)) {
+      const parsed = new Date(`${r.arriveDate}T12:00:00`)
+      if (!Number.isNaN(parsed.getTime())) patch.arriveDate = r.arriveDate
+    }
   }
   if (r.minRating === null) patch.minRating = null
   else if (typeof r.minRating === 'number' && Number.isFinite(r.minRating)) {
@@ -157,6 +173,8 @@ export function applyConditionPatch(cond: DrawConditions, patch: AiConditionPatc
   }
   if (patch.arriveAt !== undefined) {
     cond.arriveAt = patch.arriveAt
+    // A cleared or re-set time resets the day unless the patch names one
+    cond.arriveDate = patch.arriveDate ?? null
     applied.push('arriveAt')
   }
   if (patch.minRating !== undefined) {

@@ -8,10 +8,12 @@ import confetti from 'canvas-confetti'
 import type { LatLng } from '@/types/models'
 import { fetchWeatherMood, type WeatherMood } from '@/lib/weather/openMeteo'
 import { createRoom, roomUrl } from '@/lib/rooms/client'
+import { plannedEpoch } from '@/lib/draw/planning'
 import { getCurrentLocation } from '@/composables/useOrigin'
 
 import SpinWheel, { type WheelItem } from '@/components/wheel/SpinWheel.vue'
 import ConditionsDrawer from '@/components/conditions/ConditionsDrawer.vue'
+import JoinRoomSheet from '@/components/rooms/JoinRoomSheet.vue'
 import ResultCard from '@/components/result/ResultCard.vue'
 import RelaxationHints from '@/components/result/RelaxationHints.vue'
 import { aiConfigured } from '@/lib/ai/client'
@@ -24,7 +26,7 @@ import { useSettingsStore } from '@/stores/settings'
 const { t } = useI18n()
 const drawStore = useDrawStore()
 const settings = useSettingsStore()
-const { busy, isDemo, startDraw, applyRelaxation } = useDraw()
+const { busy, isDemo, startDraw, applyRelaxation, poolIsStale } = useDraw()
 const haptics = useHaptics()
 const motion = usePreferredReducedMotion()
 
@@ -84,14 +86,15 @@ async function onDraw() {
 }
 
 // Group draw: share the current wheel; friends each veto one, host spins.
-// With no wheel yet, fetch candidates first (no local spin — the final
-// draw happens in the room).
+// The wheel is refetched first whenever it's empty OR stale — conditions
+// edited since the last draw, or the host moved ≥200 m — so a second room
+// never reuses candidates the current filters wouldn't produce.
 const roomBusy = ref(false)
 async function inviteFriends() {
   if (roomBusy.value || busy.value) return
   roomBusy.value = true
   try {
-    if (drawStore.candidates.length < 2) {
+    if (drawStore.candidates.length < 2 || (await poolIsStale({ checkOrigin: true }))) {
       const ok = await startDraw({ spin: false })
       if (!ok) return
       if (drawStore.candidates.length < 2) {
@@ -99,7 +102,11 @@ async function inviteFriends() {
         return
       }
     }
-    const created = await createRoom(drawStore.candidates, settings.locale)
+    const created = await createRoom(
+      drawStore.candidates,
+      settings.locale,
+      plannedEpoch(drawStore.conditions) ?? undefined,
+    )
     if (!created) {
       drawStore.errorKey = 'room.createFailed'
       return
@@ -123,6 +130,10 @@ async function inviteFriends() {
     roomBusy.value = false
   }
 }
+
+// Join a friend's room by code or QR — the in-app path that keeps the
+// group record inside the installed PWA (iOS links always open the browser)
+const joinOpen = ref(false)
 
 // Weather nudge: fetched only when we already have a location (never
 // prompts for permission just to check the sky)
@@ -278,8 +289,17 @@ watch(
     >
       {{ roomBusy ? '🎡 …' : '👥 ' + t('room.invite') }}
     </button>
+
+    <button
+      type="button"
+      class="-mt-2 pb-1 text-xs text-stone-400 underline underline-offset-2 dark:text-stone-500"
+      @click="joinOpen = true"
+    >
+      🔑 {{ t('room.joinCta') }}
+    </button>
   </div>
 
   <ConditionsDrawer />
   <ResultCard />
+  <JoinRoomSheet :open="joinOpen" @close="joinOpen = false" />
 </template>

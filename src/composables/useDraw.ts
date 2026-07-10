@@ -1,14 +1,17 @@
 import { computed } from 'vue'
 
 import type { LatLng, RelaxationSuggestion } from '@/types/models'
-import { runDraw, styleWeight } from '@/lib/draw/engine'
+import { runDraw, styleWeight, STALE_ORIGIN_METERS } from '@/lib/draw/engine'
+import { plannedEpoch } from '@/lib/draw/planning'
 import { GooglePlacesError } from '@/lib/places/googlePlaces'
 import { getProvider } from '@/lib/places'
 import { DEMO_ORIGIN } from '@/lib/places/mockProvider'
 import { detectRegion } from '@/lib/geo/region'
+import { haversineMeters } from '@/lib/geo/distance'
 import { conciergePick } from '@/lib/ai/client'
 import { createCacheRepo } from '@/lib/db/cacheRepo'
 import { createBlocklistRepo, createHistoryRepo } from '@/lib/db/historyRepo'
+import { createPlaceNotesRepo } from '@/lib/db/placeNotesRepo'
 import { getDb } from '@/lib/db/schema'
 import { getCurrentLocation } from './useOrigin'
 import { useDrawStore } from '@/stores/draw'
@@ -19,6 +22,7 @@ export function useDraw() {
   const settings = useSettingsStore()
   const history = createHistoryRepo(getDb())
   const blocklist = createBlocklistRepo(getDb())
+  const placeNotes = createPlaceNotesRepo(getDb())
 
   const busy = computed(() => drawStore.phase === 'loading' || drawStore.phase === 'spinning')
   const isDemo = computed(() => !settings.googleApiKey)
@@ -55,6 +59,8 @@ export function useDraw() {
       const provider = getProvider(settings.googleApiKey)
       const cond = drawStore.conditions
 
+      const notes = await placeNotes.allByPlaceId()
+
       // drawStyle: bias the winner pick by how often each place was accepted.
       // Places absent from the map default to weight 1 in selectCandidates,
       // so store each weight RELATIVE to the never-tried weight — that keeps
@@ -66,6 +72,14 @@ export function useDraw() {
         weights = new Map()
         for (const [id, count] of counts) {
           weights.set(id, styleWeight(cond.drawStyle, count) / base)
+        }
+        // Diary ratings personalize "favor": a 5★ place gets 1.5×, a 1★ 0.5×
+        if (cond.drawStyle === 'favor') {
+          for (const [id, note] of notes) {
+            if (!note.myRating) continue
+            const boost = 1 + (note.myRating - 3) * 0.25
+            weights.set(id, Math.max(0.1, (weights.get(id) ?? 1) * boost))
+          }
         }
       }
 
@@ -79,6 +93,7 @@ export function useDraw() {
           cond.excludeRecentDays !== null
             ? await history.recentAcceptedPlaceIds(cond.excludeRecentDays)
             : new Set(),
+        notes,
         weights,
       })
       drawStore.setOutcome(outcome, origin, region)
@@ -137,12 +152,16 @@ export function useDraw() {
         break
       case 'dropArriveAt':
         cond.arriveAt = null
+        cond.arriveDate = null
         break
       case 'dropMinRating':
         cond.minRating = null
         break
       case 'dropBudget':
         cond.budgetLevels = []
+        break
+      case 'dropRequirePrice':
+        cond.requirePrice = false
         break
       case 'dropRecentExclusion':
         cond.excludeRecentDays = null
@@ -154,13 +173,42 @@ export function useDraw() {
     await startDraw()
   }
 
+  /**
+   * Is the fetched pool still describing what the user asks for now?
+   * True when conditions changed since the fetch, or (opt-in, costs a GPS
+   * fix) the user moved ≥200 m from where the pool was fetched.
+   */
+  async function poolIsStale(opts: { checkOrigin?: boolean } = {}): Promise<boolean> {
+    if (!drawStore.poolMatchesConditions()) return true
+    if (opts.checkOrigin && drawStore.lastOrigin) {
+      const origin = await resolveOrigin()
+      if (origin && haversineMeters(origin, drawStore.lastOrigin) > STALE_ORIGIN_METERS) {
+        return true
+      }
+    }
+    return false
+  }
+
+  /**
+   * Re-spin honouring condition edits: same pool while conditions are
+   * untouched, full re-query the moment they changed (the reported bug —
+   * stale pools must never outlive the filters that produced them).
+   */
+  async function respin() {
+    if (drawStore.poolMatchesConditions()) drawStore.respin()
+    else await startDraw()
+  }
+
   /** Accept the winner: close the card and persist the draw to local history. */
   async function accept() {
     const winner = drawStore.winner
+    const plannedAt = plannedEpoch(drawStore.conditions)
     drawStore.acceptWinner()
     if (winner) {
       try {
-        await history.addAccepted(winner, drawStore.conditions)
+        await history.addAccepted(winner, drawStore.conditions, {
+          ...(plannedAt !== null ? { plannedAt } : {}),
+        })
       } catch {
         // history is best-effort; never block the happy path
       }
@@ -179,5 +227,27 @@ export function useDraw() {
     drawStore.respin()
   }
 
-  return { busy, isDemo, startDraw, applyRelaxation, accept, blockCurrent }
+  /** "It closed down": remember permanently and spin a replacement. */
+  async function reportClosed() {
+    const winner = drawStore.winner
+    if (!winner) return
+    try {
+      await placeNotes.setClosed(winner.id, winner.name, true)
+    } catch {
+      // best-effort
+    }
+    drawStore.respin()
+  }
+
+  return {
+    busy,
+    isDemo,
+    startDraw,
+    applyRelaxation,
+    poolIsStale,
+    respin,
+    accept,
+    blockCurrent,
+    reportClosed,
+  }
 }

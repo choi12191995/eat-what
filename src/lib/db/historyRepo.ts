@@ -19,21 +19,34 @@ function dayKey(ts: number): string {
   return `${d.getFullYear()}-${m}-${day}`
 }
 
+export interface AddAcceptedOpts {
+  source?: 'group'
+  /** Epoch ms of the planned meal (future draws) */
+  plannedAt?: number
+}
+
+/** When the meal actually happens: the planned slot if any, else accept time. */
+export function effectiveTs(rec: Pick<DrawRecord, 'timestamp' | 'plannedAt'>): number {
+  return rec.plannedAt ?? rec.timestamp
+}
+
 export function createHistoryRepo(db: EatWhatDB, now: () => number = Date.now) {
   return {
     async addAccepted(
       restaurant: Restaurant,
       conditions: DrawConditions,
-      source?: 'group',
+      opts: AddAcceptedOpts = {},
     ): Promise<void> {
       const ts = now()
+      const mealTs = opts.plannedAt ?? ts
       await db.draws.add({
         timestamp: ts,
-        meal: mealForHour(new Date(ts).getHours()),
+        meal: mealForHour(new Date(mealTs).getHours()),
         conditions: JSON.parse(JSON.stringify(conditions)) as DrawConditions,
         restaurant: JSON.parse(JSON.stringify(restaurant)) as Restaurant,
         action: 'accepted',
-        ...(source ? { source } : {}),
+        ...(opts.source ? { source: opts.source } : {}),
+        ...(opts.plannedAt ? { plannedAt: opts.plannedAt } : {}),
       })
     },
 
@@ -41,16 +54,34 @@ export function createHistoryRepo(db: EatWhatDB, now: () => number = Date.now) {
       await db.draws.delete(id)
     },
 
+    /**
+     * Timeline, grouped by the day the meal happens (planned day for future
+     * draws). Plans still in the future live in upcoming(), not here.
+     */
     async listGroupedByDay(limit = 200): Promise<DayGroup[]> {
-      const records = await db.draws.orderBy('timestamp').reverse().limit(limit).toArray()
+      const nowTs = now()
+      // Only records still PLANNED for the future move out (to upcoming());
+      // ordinary records always stay, whatever the clock says.
+      const records = (await db.draws.orderBy('timestamp').reverse().limit(limit).toArray())
+        .filter((rec) => !(rec.plannedAt && rec.plannedAt > nowTs))
+        .sort((a, b) => effectiveTs(b) - effectiveTs(a))
       const groups: DayGroup[] = []
       for (const rec of records) {
-        const day = dayKey(rec.timestamp)
+        const day = dayKey(effectiveTs(rec))
         const last = groups[groups.length - 1]
         if (last && last.day === day) last.records.push(rec)
         else groups.push({ day, records: [rec] })
       }
       return groups
+    },
+
+    /** Planned draws whose time hasn't passed yet, soonest first. */
+    async upcoming(): Promise<DrawRecord[]> {
+      const nowTs = now()
+      const records = await db.draws.toArray()
+      return records
+        .filter((rec) => (rec.plannedAt ?? 0) > nowTs)
+        .sort((a, b) => a.plannedAt! - b.plannedAt!)
     },
 
     async recentAcceptedPlaceIds(days: number): Promise<Set<string>> {

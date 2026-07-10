@@ -2,26 +2,35 @@
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { Restaurant } from '@/types/models'
+import type { DrawRecord, PlaceNote, Restaurant } from '@/types/models'
+import DiarySheet from '@/components/history/DiarySheet.vue'
 import ResultCard from '@/components/result/ResultCard.vue'
 import SwipeToDelete from '@/components/ui/SwipeToDelete.vue'
 import { createHistoryRepo, type DayGroup } from '@/lib/db/historyRepo'
+import { createPlaceNotesRepo } from '@/lib/db/placeNotesRepo'
 import { getDb } from '@/lib/db/schema'
 import { emojiForTypes } from '@/lib/places/cuisines'
 
 const { t, locale } = useI18n()
 const repo = createHistoryRepo(getDb())
+const notesRepo = createPlaceNotesRepo(getDb())
 
 type Stats = Awaited<ReturnType<typeof repo.stats>>
 
 const groups = ref<DayGroup[]>([])
+const upcoming = ref<DrawRecord[]>([])
+const notes = ref<Map<string, PlaceNote>>(new Map())
 const stats = ref<Stats | null>(null)
 const selected = ref<Restaurant | null>(null)
 const cardOpen = ref(false)
 
 async function load() {
-  groups.value = await repo.listGroupedByDay()
-  stats.value = await repo.stats(5)
+  ;[groups.value, upcoming.value, notes.value, stats.value] = await Promise.all([
+    repo.listGroupedByDay(),
+    repo.upcoming(),
+    notesRepo.allByPlaceId(),
+    repo.stats(5),
+  ])
 }
 onMounted(load)
 
@@ -38,9 +47,27 @@ function timeLabel(ts: number): string {
   return new Intl.DateTimeFormat(locale.value, { hour: '2-digit', minute: '2-digit' }).format(ts)
 }
 
+function plannedLabel(ts: number): string {
+  return new Intl.DateTimeFormat(locale.value, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(ts)
+}
+
 function openRecord(r: Restaurant) {
   selected.value = r
   cardOpen.value = true
+}
+
+// Food diary editor
+const diaryFor = ref<Restaurant | null>(null)
+const diaryOpen = ref(false)
+function openDiary(r: Restaurant) {
+  diaryFor.value = r
+  diaryOpen.value = true
 }
 
 // Swipe-to-delete: one open row at a time, iOS style
@@ -56,6 +83,48 @@ async function removeRecord(id: number | undefined) {
 <template>
   <div class="mx-auto max-w-md px-6 pt-10">
     <h1 class="mb-4 text-2xl font-bold">{{ t('nav.history') }}</h1>
+
+    <!-- upcoming plans (future draws) -->
+    <section v-if="upcoming.length" class="mb-6">
+      <h2 class="mb-2 text-xs font-bold tracking-wide text-sky-500 uppercase dark:text-sky-400">
+        📅 {{ t('history.upcoming') }}
+      </h2>
+      <ul class="space-y-2">
+        <li v-for="rec in upcoming" :key="rec.id">
+          <SwipeToDelete
+            :open="openRowId === rec.id"
+            :label="t('history.delete')"
+            @update:open="openRowId = $event ? (rec.id ?? null) : null"
+            @delete="removeRecord(rec.id)"
+          >
+            <div
+              class="flex w-full items-center gap-1 rounded-2xl border border-sky-200 bg-sky-50 pr-1 dark:border-sky-900 dark:bg-sky-950/40"
+            >
+              <button
+                type="button"
+                class="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left active:scale-[0.99]"
+                @click="openRecord(rec.restaurant)"
+              >
+                <span class="text-2xl" aria-hidden="true">{{ emojiForTypes(rec.restaurant.types) }}</span>
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate text-sm font-semibold">{{ rec.restaurant.name }}</span>
+                  <span class="block text-xs font-semibold text-sky-600 dark:text-sky-400">
+                    📅 {{ plannedLabel(rec.plannedAt!) }}
+                  </span>
+                </span>
+                <span
+                  v-if="rec.source === 'group'"
+                  class="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700 dark:bg-violet-950 dark:text-violet-300"
+                  :title="t('history.groupBadge')"
+                >
+                  👥
+                </span>
+              </button>
+            </div>
+          </SwipeToDelete>
+        </li>
+      </ul>
+    </section>
 
     <!-- stats block -->
     <section
@@ -112,35 +181,56 @@ async function removeRecord(id: number | undefined) {
             @update:open="openRowId = $event ? (rec.id ?? null) : null"
             @delete="removeRecord(rec.id)"
           >
-            <button
-              type="button"
-              class="flex w-full items-center gap-3 rounded-2xl border border-stone-200 bg-orange-50 px-3 py-2.5 text-left active:scale-[0.99] dark:border-stone-800 dark:bg-stone-950"
-              @click="openRecord(rec.restaurant)"
+            <div
+              class="flex w-full items-center gap-1 rounded-2xl border border-stone-200 bg-orange-50 pr-1 dark:border-stone-800 dark:bg-stone-950"
             >
-              <span class="text-2xl" aria-hidden="true">{{ emojiForTypes(rec.restaurant.types) }}</span>
-              <span class="min-w-0 flex-1">
-                <span class="block truncate text-sm font-semibold">{{ rec.restaurant.name }}</span>
-                <span class="block text-xs text-stone-400 dark:text-stone-500">
-                  {{ rec.meal === 'lunch' ? '🥪' : '🌙' }} {{ t(`history.${rec.meal}`) }} ·
-                  {{ timeLabel(rec.timestamp) }}
-                </span>
-              </span>
-              <span
-                v-if="rec.source === 'group'"
-                class="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700 dark:bg-violet-950 dark:text-violet-300"
-                :title="t('history.groupBadge')"
+              <button
+                type="button"
+                class="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left active:scale-[0.99]"
+                @click="openRecord(rec.restaurant)"
               >
-                👥
-              </span>
-              <span v-if="rec.restaurant.rating" class="text-xs text-stone-400">
-                ★ {{ rec.restaurant.rating.toFixed(1) }}
-              </span>
-            </button>
+                <span class="text-2xl" aria-hidden="true">{{ emojiForTypes(rec.restaurant.types) }}</span>
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate text-sm font-semibold">{{ rec.restaurant.name }}</span>
+                  <span class="block text-xs text-stone-400 dark:text-stone-500">
+                    {{ rec.meal === 'lunch' ? '🥪' : '🌙' }} {{ t(`history.${rec.meal}`) }} ·
+                    {{ timeLabel(rec.plannedAt ?? rec.timestamp) }}
+                    <span v-if="rec.plannedAt">📅</span>
+                  </span>
+                </span>
+                <span
+                  v-if="rec.source === 'group'"
+                  class="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700 dark:bg-violet-950 dark:text-violet-300"
+                  :title="t('history.groupBadge')"
+                >
+                  👥
+                </span>
+                <span
+                  v-if="notes.get(rec.restaurant.id)?.myRating"
+                  class="rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                >
+                  ⭐{{ notes.get(rec.restaurant.id)!.myRating }}
+                </span>
+                <span v-else-if="rec.restaurant.rating" class="text-xs text-stone-400">
+                  ★ {{ rec.restaurant.rating.toFixed(1) }}
+                </span>
+              </button>
+              <button
+                type="button"
+                class="shrink-0 rounded-xl px-2 py-2 text-lg active:scale-90"
+                :class="notes.has(rec.restaurant.id) ? '' : 'opacity-35 grayscale'"
+                :aria-label="t('diary.title')"
+                @click="openDiary(rec.restaurant)"
+              >
+                ✍️
+              </button>
+            </div>
           </SwipeToDelete>
         </li>
       </ul>
     </section>
 
     <ResultCard :restaurant="selected" :open="cardOpen" @close="cardOpen = false" />
+    <DiarySheet :restaurant="diaryFor" :open="diaryOpen" @close="diaryOpen = false" @saved="load" />
   </div>
 </template>

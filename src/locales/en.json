@@ -29,7 +29,8 @@
       "dropMinRating": "Drop the rating filter",
       "dropBudget": "Any budget",
       "dropRecentExclusion": "Allow recent places",
-      "widenRadius": "Widen to {radius}"
+      "widenRadius": "Widen to {radius}",
+      "dropRequirePrice": "Allow places without price data"
     }
   },
   "conditions": {
@@ -78,7 +79,12 @@
     "any": "Any",
     "reset": "Reset",
     "saveDefault": "Save as default",
-    "done": "Done"
+    "done": "Done",
+    "arriveDate": "Which day",
+    "today": "Today",
+    "planHint": "Saved as an upcoming plan — find it under 📅 Upcoming in History until the day comes.",
+    "budgetRange": "Drag both ends to set a range",
+    "requirePrice": "Only places with price data"
   },
   "result": {
     "openNow": "Open now",
@@ -93,10 +99,12 @@
     "shareImage": "Image",
     "copied": "Copied",
     "never": "Never suggest this place again",
-    "aiPick": "AI's pick"
+    "aiPick": "AI's pick",
+    "reportClosed": "Closed down?"
   },
   "common": {
-    "close": "Close"
+    "close": "Close",
+    "cancel": "Cancel"
   },
   "cuisine": {
     "cantonese": "Cantonese",
@@ -136,7 +144,21 @@
     "savedToHistory": "In your history",
     "expired": "This room has expired or doesn't exist. Rooms live for 1 hour.",
     "createFailed": "Couldn't create the room — try again.",
-    "needMore": "Not enough matches for a group draw — loosen a filter."
+    "needMore": "Not enough matches for a group draw — loosen a filter.",
+    "joinCta": "Got a code? Join a friend's room",
+    "joinTitle": "Join a room",
+    "joinPlaceholder": "6-char room code",
+    "join": "Join",
+    "joinInvalid": "Codes are 6 letters/numbers",
+    "joinNotFound": "Room not found — rooms self-destruct after 1 hour",
+    "joinHint": "Join inside the app so the result saves to this device's history.",
+    "cameraDenied": "Camera unavailable — type the code instead",
+    "scan": "Scan a friend's QR code",
+    "scanStop": "Stop scanning",
+    "qr": "QR code",
+    "qrHint": "Camera app scan → opens in the browser. Inside EatWhat, tap \"join with code\" and scan → joins right in the app.",
+    "qrFailed": "Couldn't draw the QR — use the code above instead",
+    "plannedFor": "Planned: {t}"
   },
   "weather": {
     "chip": {
@@ -207,7 +229,8 @@
     "groupBadge": "From a friends draw",
     "statTotal": "meals decided",
     "statPlaces": "places tried",
-    "statStreak": "day streak"
+    "statStreak": "day streak",
+    "upcoming": "Upcoming plans"
   },
   "pwa": {
     "iosTitle": "Install EatWhat",
@@ -316,5 +339,22 @@
     "openQuotas": "Open Quotas",
     "useDemo": "Use demo for now",
     "done": "Done"
+  },
+  "diary": {
+    "title": "My food diary",
+    "myRating": "My rating",
+    "myRatingHint": "Yours outranks Google's — filters and the favourites draw use it.",
+    "mineShort": "mine {n}★",
+    "note": "What I ate",
+    "notePlaceholder": "What did you eat? Any good? What to try next time?",
+    "price": "Budget per person (correction)",
+    "priceHint": "Pick the real band — future budget filters trust yours.",
+    "cuisines": "Cuisine correction",
+    "cuisinesHint": "Google got it wrong? Pick the right ones (max 3).",
+    "keywords": "Craving tags that fit",
+    "blacklist": "Never draw this place again",
+    "closed": "Permanently closed",
+    "closedHint": "Once ticked, every draw silently skips this place.",
+    "save": "Save diary"
   }
 }

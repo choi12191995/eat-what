@@ -39,6 +39,8 @@ export interface Room {
   hostToken: string
   locale: string
   createdAt: string
+  /** Epoch ms of the planned meal (host drew for a future time) */
+  plannedAt?: number
 }
 
 const ROOM_TTL_MS = 60 * 60 * 1000
@@ -105,6 +107,15 @@ function parseCandidates(v: unknown): RoomCandidate[] | null {
   return out
 }
 
+/** Planned-meal timestamp: only sane values survive (past hour…+90 days). */
+export function parsePlannedAt(v: unknown, now = Date.now()): number | undefined {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return undefined
+  const ms = Math.round(v)
+  const min = now - 60 * 60 * 1000
+  const max = now + 90 * 24 * 60 * 60 * 1000
+  return ms >= min && ms <= max ? ms : undefined
+}
+
 /** Public view: everything except the host token. */
 function publicRoom(room: Room): Omit<Room, 'hostToken'> {
   return {
@@ -113,6 +124,7 @@ function publicRoom(room: Room): Omit<Room, 'hostToken'> {
     result: room.result,
     locale: room.locale,
     createdAt: room.createdAt,
+    plannedAt: room.plannedAt,
   }
 }
 
@@ -135,6 +147,7 @@ export class RoomDO {
       const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
       const candidates = parseCandidates(body?.candidates)
       if (!candidates) return reply({ error: 'invalid candidates' }, 400)
+      const plannedAt = parsePlannedAt(body?.plannedAt)
       const created: Room = {
         candidates,
         vetoes: {},
@@ -142,6 +155,7 @@ export class RoomDO {
         hostToken: crypto.randomUUID(),
         locale: body?.locale === 'zh-TW' ? 'zh-TW' : 'en',
         createdAt: new Date().toISOString(),
+        ...(plannedAt !== undefined ? { plannedAt } : {}),
       }
       await this.state.storage.put('room', created)
       await this.state.storage.setAlarm(Date.now() + ROOM_TTL_MS)

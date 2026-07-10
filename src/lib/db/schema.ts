@@ -1,6 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie'
 
-import type { DrawRecord, Restaurant } from '@/types/models'
+import type { DrawRecord, PlaceNote, Restaurant } from '@/types/models'
 
 export interface SearchCacheRow {
   key: string
@@ -19,6 +19,7 @@ export class EatWhatDB extends Dexie {
   searchCache!: EntityTable<SearchCacheRow, 'key'>
   placeCache!: EntityTable<Restaurant, 'id'>
   blocklist!: EntityTable<BlockRow, 'placeId'>
+  placeNotes!: EntityTable<PlaceNote, 'placeId'>
 
   constructor(name = 'eatwhat') {
     super(name)
@@ -27,6 +28,10 @@ export class EatWhatDB extends Dexie {
       searchCache: 'key, fetchedAt',
       placeCache: 'id, fetchedAt',
       blocklist: 'placeId',
+    })
+    // v2: food diary / per-place corrections (unchanged tables carry over)
+    this.version(2).stores({
+      placeNotes: 'placeId',
     })
   }
 }

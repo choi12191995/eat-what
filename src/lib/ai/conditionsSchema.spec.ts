@@ -17,11 +17,13 @@ describe('sanitizeAiConditions', () => {
     expect(patch.openNowOnly).toBe(true)
   })
 
-  it('snaps radius and rating, clamps party size', () => {
-    const patch = sanitizeAiConditions({ radiusMeters: 800, minRating: 4.2, partySize: 40 })!
-    expect(patch.radiusMeters).toBe(1000)
+  it('snaps radius to 100 m steps within bounds, snaps rating, clamps party size', () => {
+    const patch = sanitizeAiConditions({ radiusMeters: 840, minRating: 4.2, partySize: 40 })!
+    expect(patch.radiusMeters).toBe(800)
     expect(patch.minRating).toBe(4.0)
     expect(patch.partySize).toBe(12)
+    expect(sanitizeAiConditions({ radiusMeters: 12 })!.radiusMeters).toBe(100)
+    expect(sanitizeAiConditions({ radiusMeters: 99_999 })!.radiusMeters).toBe(5000)
   })
 
   it('arriveAt implies openNowOnly false; invalid times dropped', () => {
@@ -29,6 +31,19 @@ describe('sanitizeAiConditions', () => {
     expect(patch.arriveAt).toBe('21:30')
     expect(patch.openNowOnly).toBe(false)
     expect(sanitizeAiConditions({ arriveAt: 'evening' })).toBeNull()
+  })
+
+  it('arriveDate rides with arriveAt only, and clears with it', () => {
+    const patch = sanitizeAiConditions({ arriveAt: '19:00', arriveDate: '2026-07-13' })!
+    expect(patch.arriveDate).toBe('2026-07-13')
+    // a date without a time is dropped
+    expect(sanitizeAiConditions({ arriveDate: '2026-07-13' })).toBeNull()
+    // clearing the time clears the day
+    const cleared = sanitizeAiConditions({ arriveAt: null })!
+    expect(cleared.arriveAt).toBeNull()
+    expect(cleared.arriveDate).toBeNull()
+    // garbage dates dropped
+    expect(sanitizeAiConditions({ arriveAt: '19:00', arriveDate: '13/07' })!.arriveDate).toBeUndefined()
   })
 
   it('caps keywords at the tag limit', () => {
@@ -65,5 +80,14 @@ describe('applyConditionPatch', () => {
     applyConditionPatch(cond, { cuisinesInclude: ['thai'], cuisinesExclude: ['thai', 'korean'] })
     expect(cond.cuisines.include).toEqual(['thai'])
     expect(cond.cuisines.exclude).toEqual(['korean'])
+  })
+
+  it('applies arriveDate with arriveAt and resets it when the time moves without a day', () => {
+    const cond = makeDefaultConditions()
+    applyConditionPatch(cond, { arriveAt: '19:00', arriveDate: '2026-07-13' })
+    expect(cond.arriveAt).toBe('19:00')
+    expect(cond.arriveDate).toBe('2026-07-13')
+    applyConditionPatch(cond, { arriveAt: '12:30' })
+    expect(cond.arriveDate).toBeNull()
   })
 })

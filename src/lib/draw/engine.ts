@@ -2,6 +2,7 @@ import type {
   DrawConditions,
   DrawStyle,
   LatLng,
+  PlaceNote,
   Restaurant,
   RelaxationSuggestion,
 } from '@/types/models'
@@ -13,7 +14,7 @@ import { haversineMeters } from '@/lib/geo/distance'
 import type { Region } from '@/lib/geo/region'
 import { levelFromPriceRange } from '@/lib/format/price'
 import { cryptoRandomInt, shuffle, weightedRandomIndex } from './random'
-import { MAX_WHEEL_SEGMENTS } from './defaults'
+import { MAX_WHEEL_SEGMENTS, RADIUS_STEPS } from './defaults'
 import { suggestRelaxations } from './relaxation'
 
 /** Broad food-type net used when no cuisine is selected ("any cuisine"). */
@@ -31,6 +32,8 @@ export interface FilterContext {
   region: Region
   blockedIds: ReadonlySet<string>
   recentIds: ReadonlySet<string>
+  /** Diner's own diary corrections by place id — newer truth than Google */
+  notes?: ReadonlyMap<string, PlaceNote>
   /** "Today" for the arrive-at weekday; injectable for tests */
   now?: Date
 }
@@ -40,7 +43,28 @@ export interface FilterOverrides {
   skipArriveAt?: boolean
   skipMinRating?: boolean
   skipBudget?: boolean
+  skipRequirePrice?: boolean
   skipRecent?: boolean
+}
+
+/**
+ * Did the pool a draw produced still match what the user asks for now?
+ * partySize is excluded — it never changes which places qualify.
+ */
+export function conditionsFingerprint(cond: DrawConditions): string {
+  return JSON.stringify({ ...cond, partySize: 0 })
+}
+
+/** Origin drift beyond this means the cached pool is describing somewhere else. */
+export const STALE_ORIGIN_METERS = 200
+
+/**
+ * Radius actually sent to the API / used in cache keys: the free-form slider
+ * value snapped UP to the next fetch step, so 900 m and 1 km draws share one
+ * cached search instead of each metre minting new billable calls.
+ */
+export function queryRadiusFor(radiusMeters: number): number {
+  return RADIUS_STEPS.find((r) => r >= radiusMeters) ?? RADIUS_STEPS[RADIUS_STEPS.length - 1]!
 }
 
 // Nearby ranking can be fuzzy at the boundary; allow a small grace margin
@@ -56,34 +80,53 @@ export function filterPool(
   const excludedTypes = new Set(typesForCuisines(cond.cuisines.exclude))
 
   return raw.filter((r) => {
+    const note = ctx.notes?.get(r.id)
+
     // -- hard filters --
     if (r.businessStatus && r.businessStatus !== 'OPERATIONAL') return false
+    // Self-reported closure outranks Google still listing it as open
+    if (note?.closed) return false
     if (ctx.blockedIds.has(r.id)) return false
     if (!o.skipRecent && cond.excludeRecentDays !== null && ctx.recentIds.has(r.id)) return false
     // Exclusion wins over inclusion (a Korean BBQ place is dropped when
-    // "Korean" is excluded even if "BBQ" is included).
-    if (excludedTypes.size && r.types.some((t) => excludedTypes.has(t))) return false
+    // "Korean" is excluded even if "BBQ" is included). A diary cuisine
+    // correction replaces Google's types for this check — it can rescue a
+    // miscategorized place or condemn one Google got wrong.
+    if (note?.cuisines?.length) {
+      if (note.cuisines.some((id) => cond.cuisines.exclude.includes(id))) return false
+    } else if (excludedTypes.size && r.types.some((t) => excludedTypes.has(t))) {
+      return false
+    }
     if (haversineMeters(ctx.origin, r.location) > cond.radiusMeters * RADIUS_GRACE) return false
 
     // -- soft filters --
     if (!o.skipOpenNow && cond.openNowOnly && r.openNow !== true) return false
     // Pre-draw for later: drop places whose known hours don't cover the
     // arrival time. Places with no structured hours pass (same philosophy
-    // as unknown prices — don't punish sparse data).
+    // as unknown prices — don't punish sparse data). A planned date picks
+    // the weekday; hours repeat weekly so next Monday ≈ this Monday.
     if (!o.skipArriveAt && !cond.openNowOnly && cond.arriveAt) {
       const minutes = minutesFromHHmm(cond.arriveAt)
       if (minutes !== null && r.openPeriods?.length) {
-        const day = (ctx.now ?? new Date()).getDay()
-        if (!isOpenAt(r.openPeriods, day, minutes)) return false
+        const when = cond.arriveDate
+          ? new Date(`${cond.arriveDate}T12:00:00`)
+          : (ctx.now ?? new Date())
+        if (!isOpenAt(r.openPeriods, when.getDay(), minutes)) return false
       }
     }
     if (!o.skipMinRating && cond.minRating !== null) {
-      if (r.rating === undefined || r.rating < cond.minRating) return false
+      const rating = note?.myRating ?? r.rating
+      if (rating === undefined || rating < cond.minRating) return false
     }
+    const level =
+      note?.priceLevel ??
+      r.priceLevel ??
+      (r.priceRange ? levelFromPriceRange(r.priceRange, ctx.region) : undefined)
+    if (!o.skipRequirePrice && cond.requirePrice && level === undefined) return false
     if (!o.skipBudget && cond.budgetLevels.length > 0) {
-      const level = r.priceLevel ?? (r.priceRange ? levelFromPriceRange(r.priceRange, ctx.region) : undefined)
       // Price-unknown places pass — dropping them would bias against small
-      // local shops that simply have no price data on Google.
+      // local shops that simply have no price data on Google. (requirePrice
+      // above is the explicit opt-in to drop them.)
       if (level !== undefined && !cond.budgetLevels.includes(level)) return false
     }
     return true
@@ -132,6 +175,8 @@ export interface DrawEngineDeps {
   region: Region
   blockedIds?: ReadonlySet<string>
   recentIds?: ReadonlySet<string>
+  /** Diary corrections by place id (place notes) */
+  notes?: ReadonlyMap<string, PlaceNote>
   /** Optional read-through cache (wired in with IndexedDB) */
   cache?: {
     get(key: string): Promise<Restaurant[] | null>
@@ -154,7 +199,7 @@ export function searchCacheKey(origin: LatLng, cond: DrawConditions, lang: strin
   const cell = `${origin.lat.toFixed(3)},${origin.lng.toFixed(3)}`
   const include = [...cond.cuisines.include].sort().join('+') || 'any'
   const exclude = [...cond.cuisines.exclude].sort().join('+') || 'none'
-  return `${cell}|${cond.radiusMeters}|${include}|${exclude}|${lang}`
+  return `${cell}|${queryRadiusFor(cond.radiusMeters)}|${include}|${exclude}|${lang}`
 }
 
 /** One cache entry per fine-grained tag — reusable across tag combinations. */
@@ -187,7 +232,7 @@ async function fetchNearby(
   const results = await deps.provider.searchNearby(
     {
       origin,
-      radiusMeters: cond.radiusMeters,
+      radiusMeters: queryRadiusFor(cond.radiusMeters),
       includedTypes,
       excludedTypes: excludedTypes.length ? excludedTypes : undefined,
       languageCode: deps.lang,
@@ -205,14 +250,14 @@ async function fetchKeyword(
   origin: LatLng,
   deps: DrawEngineDeps,
 ): Promise<Restaurant[]> {
-  const key = keywordCacheKey(origin, cond.radiusMeters, tag.id, deps.lang)
+  const key = keywordCacheKey(origin, queryRadiusFor(cond.radiusMeters), tag.id, deps.lang)
   const cached = await deps.cache?.get(key)
   if (cached) return cached
   const results = await deps.provider.searchText(
     {
       query: tag.q[deps.lang],
       origin,
-      radiusMeters: cond.radiusMeters,
+      radiusMeters: queryRadiusFor(cond.radiusMeters),
       languageCode: deps.lang,
       maxResults: 20,
     },
@@ -253,6 +298,7 @@ export async function runDraw(
     region: deps.region,
     blockedIds: deps.blockedIds ?? new Set(),
     recentIds: deps.recentIds ?? new Set(),
+    notes: deps.notes,
   }
 
   const pool = filterPool(raw, cond, ctx)

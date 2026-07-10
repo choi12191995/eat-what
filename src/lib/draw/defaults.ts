@@ -1,6 +1,13 @@
 import type { DrawConditions } from '@/types/models'
 
+/** Fetch radii — cache/API queries snap UP to one of these so the free-form
+ *  slider can't fragment the 24 h search cache into per-metre entries. */
 export const RADIUS_STEPS = [300, 500, 1000, 2000, 5000] as const
+
+/** Free-form slider bounds (client-side haversine filters to the exact value) */
+export const RADIUS_MIN = 100
+export const RADIUS_MAX = 5000
+export const RADIUS_SLIDER_STEP = 100
 
 export const MAX_WHEEL_SEGMENTS = 10
 
@@ -11,11 +18,13 @@ export function makeDefaultConditions(): DrawConditions {
     cuisines: { include: [], exclude: [] },
     keywords: [],
     budgetLevels: [],
+    requirePrice: false,
     radiusMeters: 1000,
     origin: { mode: 'gps' },
     partySize: 2,
     openNowOnly: true,
     arriveAt: null,
+    arriveDate: null,
     minRating: null,
     excludeRecentDays: null,
     drawStyle: 'uniform',

@@ -8,7 +8,7 @@ import type {
   RelaxationSuggestion,
 } from '@/types/models'
 import type { Region } from '@/lib/geo/region'
-import { selectCandidates, type DrawOutcome } from '@/lib/draw/engine'
+import { conditionsFingerprint, selectCandidates, type DrawOutcome } from '@/lib/draw/engine'
 import { makeDefaultConditions } from '@/lib/draw/defaults'
 import { useSettingsStore } from './settings'
 
@@ -30,6 +30,8 @@ export const useDrawStore = defineStore('draw', () => {
   const winnerIndex = ref(-1)
   const relaxations = ref<RelaxationSuggestion[]>([])
   const lastOrigin = ref<LatLng | null>(null)
+  /** Fingerprint of the conditions the current pool was fetched with */
+  const poolFingerprint = ref<string | null>(null)
   const region = ref<Region>('HK')
   const errorKey = ref<string | null>(null)
   const drawerOpen = ref(false)
@@ -49,7 +51,16 @@ export const useDrawStore = defineStore('draw', () => {
     winnerIndex.value = outcome.winnerIndex
     relaxations.value = outcome.relaxations
     lastOrigin.value = origin
+    poolFingerprint.value = conditionsFingerprint(conditions.value)
     region.value = detectedRegion
+  }
+
+  /** False once the user edits any condition after the pool was fetched. */
+  function poolMatchesConditions(): boolean {
+    return (
+      poolFingerprint.value !== null &&
+      poolFingerprint.value === conditionsFingerprint(conditions.value)
+    )
   }
 
   /** Exclude the current winner and spin again from the remaining pool — no refetch. */
@@ -99,6 +110,7 @@ export const useDrawStore = defineStore('draw', () => {
     winnerIndex,
     relaxations,
     lastOrigin,
+    poolFingerprint,
     region,
     errorKey,
     drawerOpen,
@@ -107,6 +119,7 @@ export const useDrawStore = defineStore('draw', () => {
     aiReason,
     winner,
     setOutcome,
+    poolMatchesConditions,
     respin,
     acceptWinner,
     saveConditionsAsDefault,

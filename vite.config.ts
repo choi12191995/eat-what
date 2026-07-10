@@ -29,6 +29,11 @@ export default defineConfig({
         lang: 'zh-TW',
         display: 'standalone',
         orientation: 'portrait',
+        // Android WebAPK captures in-scope links (room invites) into the
+        // installed app; reuse the open window instead of stacking new ones.
+        // iOS ignores this — links there always open the browser, which is
+        // why rooms are also joinable in-app by code/QR.
+        launch_handler: { client_mode: 'navigate-existing' },
         theme_color: '#fff7ed',
         background_color: '#fff7ed',
         icons: [

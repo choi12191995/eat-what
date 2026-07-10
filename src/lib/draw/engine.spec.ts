@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import type { DrawConditions, Restaurant } from '@/types/models'
+import type { DrawConditions, PlaceNote, Restaurant } from '@/types/models'
 import type { PlacesProvider } from '@/lib/places/provider'
 import { makeDefaultConditions } from './defaults'
 import {
   ALL_FOOD_TYPES,
+  conditionsFingerprint,
   filterPool,
+  queryRadiusFor,
   runDraw,
   selectCandidates,
   searchCacheKey,
@@ -101,6 +103,95 @@ describe('filterPool', () => {
     // midpoint 90 HKD → level 2 in HK bands
     expect(filterPool(raw, cond({ budgetLevels: [2] }), ctx())).toHaveLength(1)
     expect(filterPool(raw, cond({ budgetLevels: [4] }), ctx())).toHaveLength(0)
+  })
+
+  it('requirePrice drops price-unknown places, independent of budget', () => {
+    const raw = [place({ id: 'priced', priceLevel: 2 }), place({ id: 'nodata' })]
+    expect(filterPool(raw, cond({ requirePrice: true }), ctx()).map((r) => r.id)).toEqual(['priced'])
+    // relaxation override restores them
+    expect(filterPool(raw, cond({ requirePrice: true }), ctx(), { skipRequirePrice: true })).toHaveLength(2)
+  })
+
+  it('arriveDate checks the planned weekday, not today', () => {
+    // open Mondays 18:00–22:00 only
+    const monDinner = place({
+      id: 'mon',
+      openPeriods: [{ open: { day: 1, hour: 18, minute: 0 }, close: { day: 1, hour: 22, minute: 0 } }],
+    })
+    const base = { openNowOnly: false, arriveAt: '19:00' }
+    // a Thursday "now", planning for Monday 2026-07-13
+    const thursday = new Date('2026-07-09T10:00:00')
+    expect(
+      filterPool([monDinner], cond({ ...base, arriveDate: '2026-07-13' }), ctx({ now: thursday })),
+    ).toHaveLength(1)
+    expect(filterPool([monDinner], cond({ ...base }), ctx({ now: thursday }))).toHaveLength(0)
+  })
+})
+
+describe('filterPool with place notes (diary corrections)', () => {
+  const note = (over: Partial<PlaceNote>): PlaceNote => ({
+    placeId: 'p1',
+    name: 'x',
+    updatedAt: 0,
+    ...over,
+  })
+  const notesCtx = (id: string, n: Partial<PlaceNote>) =>
+    ctx({ notes: new Map([[id, note({ placeId: id, ...n })]]) })
+
+  it('self-reported closed places are hard-filtered', () => {
+    const raw = [place({ id: 'gone' }), place({ id: 'alive' })]
+    const out = filterPool(raw, cond(), ctx({ notes: new Map([['gone', note({ placeId: 'gone', closed: true })]]) }))
+    expect(out.map((r) => r.id)).toEqual(['alive'])
+  })
+
+  it('my rating outranks Google for the minRating filter', () => {
+    const raw = [place({ id: 'p1', rating: 3.2 })]
+    expect(filterPool(raw, cond({ minRating: 4.0 }), notesCtx('p1', { myRating: 5 }))).toHaveLength(1)
+    const rawGood = [place({ id: 'p1', rating: 4.8 })]
+    expect(filterPool(rawGood, cond({ minRating: 4.0 }), notesCtx('p1', { myRating: 2 }))).toHaveLength(0)
+  })
+
+  it('corrected price band replaces Google level in the budget filter', () => {
+    const raw = [place({ id: 'p1', priceLevel: 4 })]
+    expect(filterPool(raw, cond({ budgetLevels: [1, 2] }), notesCtx('p1', { priceLevel: 2 }))).toHaveLength(1)
+    // and satisfies requirePrice for places Google has no data on
+    const noData = [place({ id: 'p1' })]
+    expect(filterPool(noData, cond({ requirePrice: true }), notesCtx('p1', { priceLevel: 1 }))).toHaveLength(1)
+  })
+
+  it('corrected cuisines replace Google types for exclusion — both directions', () => {
+    // Google says Korean, diner corrected to Japanese: survives "no Korean"
+    const raw = [place({ id: 'p1', types: ['korean_restaurant'] })]
+    const c = cond({ cuisines: { include: [], exclude: ['korean'] } })
+    expect(filterPool(raw, c, notesCtx('p1', { cuisines: ['japanese'] }))).toHaveLength(1)
+    // Google says Japanese, diner corrected to Korean: now excluded
+    const raw2 = [place({ id: 'p1', types: ['japanese_restaurant'] })]
+    expect(filterPool(raw2, c, notesCtx('p1', { cuisines: ['korean'] }))).toHaveLength(0)
+  })
+})
+
+describe('conditionsFingerprint / queryRadiusFor', () => {
+  it('changes when any filter changes, ignores partySize', () => {
+    const a = conditionsFingerprint(cond())
+    expect(conditionsFingerprint(cond())).toBe(a)
+    expect(conditionsFingerprint(cond({ partySize: 9 }))).toBe(a)
+    expect(conditionsFingerprint(cond({ budgetLevels: [1] }))).not.toBe(a)
+    expect(conditionsFingerprint(cond({ radiusMeters: 900 }))).not.toBe(a)
+    expect(conditionsFingerprint(cond({ keywords: ['hotpot'] }))).not.toBe(a)
+    expect(conditionsFingerprint(cond({ arriveDate: '2026-07-13' }))).not.toBe(a)
+  })
+
+  it('quantizes fetch radius up to a step so the slider cannot fragment the cache', () => {
+    expect(queryRadiusFor(100)).toBe(300)
+    expect(queryRadiusFor(300)).toBe(300)
+    expect(queryRadiusFor(900)).toBe(1000)
+    expect(queryRadiusFor(1000)).toBe(1000)
+    expect(queryRadiusFor(1100)).toBe(2000)
+    expect(queryRadiusFor(5000)).toBe(5000)
+    // slider values inside one step share a cache key
+    expect(searchCacheKey(ORIGIN, cond({ radiusMeters: 900 }), 'en')).toBe(
+      searchCacheKey(ORIGIN, cond({ radiusMeters: 1000 }), 'en'),
+    )
   })
 })
 
