@@ -83,26 +83,30 @@ describe('filterPool', () => {
     expect(filterPool(raw, cond({ minRating: 4.0 }), ctx()).map((r) => r.id)).toEqual(['good'])
   })
 
-  it('budget filters by priceLevel but lets price-unknown places pass', () => {
+  it('budget window overlaps $-level bands; price-unknown places pass', () => {
     const raw = [
-      place({ id: 'cheap', priceLevel: 1 }),
-      place({ id: 'fancy', priceLevel: 4 }),
+      place({ id: 'cheap', priceLevel: 1 }), // HK band: 0–50
+      place({ id: 'fancy', priceLevel: 4 }), // 400+
       place({ id: 'nodata' }),
     ]
-    const out = filterPool(raw, cond({ budgetLevels: [1, 2] }), ctx())
+    const out = filterPool(raw, cond({ budgetRange: { min: 0, max: 150 } }), ctx())
     expect(out.map((r) => r.id).sort()).toEqual(['cheap', 'nodata'])
+    // unbounded top: "HK$400+" catches the fancy place
+    const rich = filterPool(raw, cond({ budgetRange: { min: 400, max: null } }), ctx())
+    expect(rich.map((r) => r.id).sort()).toEqual(['fancy', 'nodata'])
   })
 
-  it('budget derives a level from priceRange when priceLevel is missing', () => {
+  it('an explicit priceRange is used directly — finer than its band', () => {
     const raw = [
       place({
         id: 'range-mid',
         priceRange: { start: { currencyCode: 'HKD', units: 60 }, end: { currencyCode: 'HKD', units: 120 } },
       }),
     ]
-    // midpoint 90 HKD → level 2 in HK bands
-    expect(filterPool(raw, cond({ budgetLevels: [2] }), ctx())).toHaveLength(1)
-    expect(filterPool(raw, cond({ budgetLevels: [4] }), ctx())).toHaveLength(0)
+    // 60–120 overlaps 100–150 (a band-level filter could not see this)
+    expect(filterPool(raw, cond({ budgetRange: { min: 100, max: 150 } }), ctx())).toHaveLength(1)
+    expect(filterPool(raw, cond({ budgetRange: { min: 125, max: null } }), ctx())).toHaveLength(0)
+    expect(filterPool(raw, cond({ budgetRange: { min: 0, max: 50 } }), ctx())).toHaveLength(0)
   })
 
   it('requirePrice drops price-unknown places, independent of budget', () => {
@@ -151,12 +155,17 @@ describe('filterPool with place notes (diary corrections)', () => {
     expect(filterPool(rawGood, cond({ minRating: 4.0 }), notesCtx('p1', { myRating: 2 }))).toHaveLength(0)
   })
 
-  it('corrected price band replaces Google level in the budget filter', () => {
+  it('diary spend beats Google price data in the budget filter', () => {
+    // Google says $$$$; the diner actually paid ~HK$120
     const raw = [place({ id: 'p1', priceLevel: 4 })]
-    expect(filterPool(raw, cond({ budgetLevels: [1, 2] }), notesCtx('p1', { priceLevel: 2 }))).toHaveLength(1)
+    const c = cond({ budgetRange: { min: 0, max: 150 } })
+    expect(filterPool(raw, c, notesCtx('p1', { spend: { min: 120, max: 120 } }))).toHaveLength(1)
+    expect(filterPool(raw, c, ctx())).toHaveLength(0)
     // and satisfies requirePrice for places Google has no data on
     const noData = [place({ id: 'p1' })]
-    expect(filterPool(noData, cond({ requirePrice: true }), notesCtx('p1', { priceLevel: 1 }))).toHaveLength(1)
+    expect(
+      filterPool(noData, cond({ requirePrice: true }), notesCtx('p1', { spend: { min: 40, max: 60 } })),
+    ).toHaveLength(1)
   })
 
   it('corrected cuisines replace Google types for exclusion — both directions', () => {
@@ -175,7 +184,7 @@ describe('conditionsFingerprint / queryRadiusFor', () => {
     const a = conditionsFingerprint(cond())
     expect(conditionsFingerprint(cond())).toBe(a)
     expect(conditionsFingerprint(cond({ partySize: 9 }))).toBe(a)
-    expect(conditionsFingerprint(cond({ budgetLevels: [1] }))).not.toBe(a)
+    expect(conditionsFingerprint(cond({ budgetRange: { min: 0, max: 100 } }))).not.toBe(a)
     expect(conditionsFingerprint(cond({ radiusMeters: 900 }))).not.toBe(a)
     expect(conditionsFingerprint(cond({ keywords: ['hotpot'] }))).not.toBe(a)
     expect(conditionsFingerprint(cond({ arriveDate: '2026-07-13' }))).not.toBe(a)

@@ -60,7 +60,7 @@
     "originSearchPlaceholder": "Search a place or area…",
     "more": "More",
     "openNow": "Open now only",
-    "arriveAt": "Arriving at (today)",
+    "arriveAt": "Arriving at",
     "minRating": "Min rating",
     "partySize": "Party size",
     "noRepeat": "Skip recent picks",
@@ -83,7 +83,7 @@
     "arriveDate": "Which day",
     "today": "Today",
     "planHint": "Saved as an upcoming plan — find it under 📅 Upcoming in History until the day comes.",
-    "budgetRange": "Drag both ends to set a range",
+    "budgetRange": "Per-person spend — both thumbs together = exact amount",
     "requirePrice": "Only places with price data"
   },
   "result": {
@@ -230,7 +230,10 @@
     "statTotal": "meals decided",
     "statPlaces": "places tried",
     "statStreak": "day streak",
-    "upcoming": "Upcoming plans"
+    "upcoming": "Upcoming plans",
+    "breakfast": "Breakfast",
+    "tea": "Tea time",
+    "lateNight": "Late-night bites"
   },
   "pwa": {
     "iosTitle": "Install EatWhat",
@@ -348,13 +351,14 @@
     "note": "What I ate",
     "notePlaceholder": "What did you eat? Any good? What to try next time?",
     "price": "Budget per person (correction)",
-    "priceHint": "Pick the real band — future budget filters trust yours.",
+    "priceHint": "What you actually paid per person — future budget filters trust this over Google.",
     "cuisines": "Cuisine correction",
     "cuisinesHint": "Google got it wrong? Pick the right ones (max 3).",
     "keywords": "Craving tags that fit",
     "blacklist": "Never draw this place again",
     "closed": "Permanently closed",
     "closedHint": "Once ticked, every draw silently skips this place.",
-    "save": "Save diary"
+    "save": "Save diary",
+    "priceUnset": "not recorded"
   }
 }

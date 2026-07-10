@@ -4,7 +4,8 @@
  * unknown ids dropped, numbers snapped/clamped — so a hallucinated field can
  * never corrupt the store.
  */
-import type { DrawConditions, DrawStyle, PriceLevel } from '@/types/models'
+import type { DrawConditions, DrawStyle } from '@/types/models'
+import type { BudgetWindow } from '@/lib/format/price'
 import { CUISINES, type CuisineId } from '@/lib/places/cuisines'
 import { KEYWORD_GROUPS, keywordTagById, MAX_KEYWORD_TAGS } from '@/lib/places/keywords'
 import { MIN_RATING_CHOICES, RADIUS_MAX, RADIUS_MIN, RADIUS_SLIDER_STEP } from '@/lib/draw/defaults'
@@ -14,7 +15,7 @@ export interface AiConditionPatch {
   cuisinesInclude?: CuisineId[]
   cuisinesExclude?: CuisineId[]
   keywords?: string[]
-  budgetLevels?: PriceLevel[]
+  budgetRange?: BudgetWindow
   radiusMeters?: number
   openNowOnly?: boolean
   arriveAt?: string | null
@@ -51,7 +52,7 @@ Fields:
 - "cuisinesInclude": array from [${cuisineList}]
 - "cuisinesExclude": same vocabulary, for things the user refuses
 - "keywords": array (max ${MAX_KEYWORD_TAGS}) from [${keywordList}]
-- "budgetLevels": array of 1-4 (1=cheapest). "平/cheap"→[1,2], "貴/fancy"→[3,4]
+- "budgetMin"/"budgetMax": per-person spend, NUMBERS in the diner's local currency. "每人一百蚊以內"→budgetMax 100, "唔好太平"→budgetMin 100, "人均二三百"→budgetMin 200 budgetMax 300
 - "radiusMeters": integer ${RADIUS_MIN}-${RADIUS_MAX} (meters). "近/close"→500, "行遠啲/anywhere"→2000
 - "openNowOnly": boolean
 - "arriveAt": "HH:mm" 24h, when they mention eating at a specific later time (also set openNowOnly false)
@@ -100,15 +101,17 @@ export function sanitizeAiConditions(raw: unknown): AiConditionPatch | null {
     if (tags.length || r.keywords.length === 0) patch.keywords = tags
   }
 
-  if (Array.isArray(r.budgetLevels)) {
-    const levels = [
-      ...new Set(
-        r.budgetLevels.filter(
-          (x): x is PriceLevel => typeof x === 'number' && Number.isInteger(x) && x >= 1 && x <= 4,
-        ),
-      ),
-    ].sort()
-    if (levels.length || r.budgetLevels.length === 0) patch.budgetLevels = levels
+  const money = (v: unknown): number | undefined =>
+    typeof v === 'number' && Number.isFinite(v) && v >= 0
+      ? Math.min(1_000_000, Math.round(v))
+      : undefined
+  const budgetMin = money(r.budgetMin)
+  const budgetMax = money(r.budgetMax)
+  if (budgetMin !== undefined || budgetMax !== undefined) {
+    let min = budgetMin ?? 0
+    let max = budgetMax ?? null
+    if (max !== null && min > max) [min, max] = [max, min]
+    patch.budgetRange = { min, max }
   }
 
   if (typeof r.radiusMeters === 'number' && Number.isFinite(r.radiusMeters)) {
@@ -159,8 +162,8 @@ export function applyConditionPatch(cond: DrawConditions, patch: AiConditionPatc
     cond.keywords = patch.keywords
     applied.push('keywords')
   }
-  if (patch.budgetLevels !== undefined) {
-    cond.budgetLevels = patch.budgetLevels
+  if (patch.budgetRange !== undefined) {
+    cond.budgetRange = patch.budgetRange
     applied.push('budget')
   }
   if (patch.radiusMeters !== undefined) {

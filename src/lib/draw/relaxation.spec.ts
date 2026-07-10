@@ -42,7 +42,7 @@ describe('suggestRelaxations', () => {
 
   it('only suggests active constraints', () => {
     const raw = [place({ id: 'a', openNow: false })]
-    const out = suggestRelaxations(raw, cond({ openNowOnly: true, minRating: null, budgetLevels: [] }), ctx)
+    const out = suggestRelaxations(raw, cond({ openNowOnly: true, minRating: null, budgetRange: null }), ctx)
     const kinds = out.map((s) => s.kind)
     expect(kinds).toContain('dropOpenNow')
     expect(kinds).not.toContain('dropMinRating')

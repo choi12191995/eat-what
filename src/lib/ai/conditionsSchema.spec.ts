@@ -8,13 +8,23 @@ describe('sanitizeAiConditions', () => {
     const patch = sanitizeAiConditions({
       cuisinesInclude: ['japanese', 'made-up', 'thai'],
       keywords: ['hotpot', 'nonsense'],
-      budgetLevels: [1, 2, 9],
+      budgetMax: 100,
       openNowOnly: true,
     })!
     expect(patch.cuisinesInclude).toEqual(['japanese', 'thai'])
     expect(patch.keywords).toEqual(['hotpot'])
-    expect(patch.budgetLevels).toEqual([1, 2])
+    expect(patch.budgetRange).toEqual({ min: 0, max: 100 })
     expect(patch.openNowOnly).toBe(true)
+  })
+
+  it('budget amounts: open sides, swapped bounds, garbage dropped', () => {
+    expect(sanitizeAiConditions({ budgetMin: 100 })!.budgetRange).toEqual({ min: 100, max: null })
+    expect(sanitizeAiConditions({ budgetMin: 300, budgetMax: 200 })!.budgetRange).toEqual({
+      min: 200,
+      max: 300,
+    })
+    expect(sanitizeAiConditions({ budgetMax: 'cheap' })).toBeNull()
+    expect(sanitizeAiConditions({ budgetMax: -5 })).toBeNull()
   })
 
   it('snaps radius to 100 m steps within bounds, snaps rating, clamps party size', () => {

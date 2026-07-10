@@ -9,15 +9,15 @@ import type {
 } from '@/types/models'
 import type { Region } from '@/lib/geo/region'
 import { conditionsFingerprint, selectCandidates, type DrawOutcome } from '@/lib/draw/engine'
-import { makeDefaultConditions } from '@/lib/draw/defaults'
+import { hydrateConditions } from '@/lib/draw/defaults'
 import { useSettingsStore } from './settings'
 
 export type DrawPhase = 'idle' | 'loading' | 'spinning' | 'landed'
 
 function cloneConditions(c: DrawConditions): DrawConditions {
-  // Spread over fresh defaults so conditions persisted by an older build
-  // (missing newer keys like `keywords`) hydrate complete
-  return { ...makeDefaultConditions(), ...(JSON.parse(JSON.stringify(c)) as DrawConditions) }
+  // Hydration fills fields added since the conditions were persisted and
+  // migrates the v1 $-level budget into the money-window shape
+  return hydrateConditions(JSON.parse(JSON.stringify(c)) as DrawConditions)
 }
 
 export const useDrawStore = defineStore('draw', () => {

@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { DrawRecord, PlaceNote, Restaurant } from '@/types/models'
+import type { DrawRecord, Meal, PlaceNote, Restaurant } from '@/types/models'
 import DiarySheet from '@/components/history/DiarySheet.vue'
 import ResultCard from '@/components/result/ResultCard.vue'
 import SwipeToDelete from '@/components/ui/SwipeToDelete.vue'
@@ -14,6 +14,14 @@ import { emojiForTypes } from '@/lib/places/cuisines'
 const { t, locale } = useI18n()
 const repo = createHistoryRepo(getDb())
 const notesRepo = createPlaceNotesRepo(getDb())
+
+const MEAL_EMOJI: Record<Meal, string> = {
+  breakfast: '🍳',
+  lunch: '🥪',
+  tea: '☕️',
+  dinner: '🌙',
+  lateNight: '🌜',
+}
 
 type Stats = Awaited<ReturnType<typeof repo.stats>>
 
@@ -193,7 +201,7 @@ async function removeRecord(id: number | undefined) {
                 <span class="min-w-0 flex-1">
                   <span class="block truncate text-sm font-semibold">{{ rec.restaurant.name }}</span>
                   <span class="block text-xs text-stone-400 dark:text-stone-500">
-                    {{ rec.meal === 'lunch' ? '🥪' : '🌙' }} {{ t(`history.${rec.meal}`) }} ·
+                    {{ MEAL_EMOJI[rec.meal] ?? '🍽️' }} {{ t(`history.${rec.meal}`) }} ·
                     {{ timeLabel(rec.plannedAt ?? rec.timestamp) }}
                     <span v-if="rec.plannedAt">📅</span>
                   </span>

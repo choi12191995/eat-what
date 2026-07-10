@@ -158,7 +158,7 @@ export function useDraw() {
         cond.minRating = null
         break
       case 'dropBudget':
-        cond.budgetLevels = []
+        cond.budgetRange = null
         break
       case 'dropRequirePrice':
         cond.requirePrice = false

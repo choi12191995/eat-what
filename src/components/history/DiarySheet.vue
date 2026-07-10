@@ -8,12 +8,13 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { PriceLevel, Restaurant } from '@/types/models'
+import type { Restaurant } from '@/types/models'
 import type { CuisineId } from '@/lib/places/cuisines'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
+import BudgetRangeSlider from '@/components/conditions/BudgetRangeSlider.vue'
 import { CUISINES } from '@/lib/places/cuisines'
 import { KEYWORD_GROUPS, MAX_KEYWORD_TAGS } from '@/lib/places/keywords'
-import { bandLabel } from '@/lib/format/price'
+import { formatBudgetWindow, type BudgetWindow } from '@/lib/format/price'
 import { detectRegion } from '@/lib/geo/region'
 import { createBlocklistRepo } from '@/lib/db/historyRepo'
 import { createPlaceNotesRepo } from '@/lib/db/placeNotesRepo'
@@ -29,14 +30,12 @@ const notesRepo = createPlaceNotesRepo(getDb())
 const blocklist = createBlocklistRepo(getDb())
 
 const MAX_CUISINES = 3
-const PRICE_LEVELS: PriceLevel[] = [1, 2, 3, 4]
-const SYMBOLS: Record<PriceLevel, string> = { 1: '$', 2: '$$', 3: '$$$', 4: '$$$$' }
 const ALL_TAGS = KEYWORD_GROUPS.flatMap((g) => g.tags)
 
 const form = reactive({
   myRating: 0,
   note: '',
-  priceLevel: null as PriceLevel | null,
+  spend: null as BudgetWindow | null,
   cuisines: [] as CuisineId[],
   keywords: [] as string[],
   blacklisted: false,
@@ -59,7 +58,7 @@ watch(
     ])
     form.myRating = note?.myRating ?? 0
     form.note = note?.note ?? ''
-    form.priceLevel = note?.priceLevel ?? null
+    form.spend = note?.spend ? { ...note.spend } : null
     form.cuisines = [...(note?.cuisines ?? [])]
     form.keywords = [...(note?.keywords ?? [])]
     form.closed = note?.closed ?? false
@@ -90,7 +89,7 @@ async function save() {
       name: r.name,
       myRating: form.myRating || undefined,
       note: form.note.trim() || undefined,
-      priceLevel: form.priceLevel ?? undefined,
+      spend: form.spend ? { ...form.spend } : undefined,
       cuisines: form.cuisines.length ? [...form.cuisines] : undefined,
       keywords: form.keywords.length ? [...form.keywords] : undefined,
       closed: form.closed || undefined,
@@ -154,30 +153,25 @@ async function save() {
         />
       </section>
 
-      <!-- corrected price band -->
+      <!-- what I actually paid per person (exact when both thumbs meet) -->
       <section>
-        <h3 class="mb-2 text-sm font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400">
-          {{ t('diary.price') }}
-        </h3>
-        <div class="grid grid-cols-4 gap-2">
+        <div class="mb-2 flex items-center justify-between">
+          <h3 class="text-sm font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400">
+            {{ t('diary.price') }}
+          </h3>
           <button
-            v-for="l in PRICE_LEVELS"
-            :key="l"
+            v-if="form.spend"
             type="button"
-            class="flex flex-col items-center rounded-xl border px-2 py-2 transition-all active:scale-95"
-            :class="
-              form.priceLevel === l
-                ? 'border-orange-500 bg-orange-500/10 text-orange-600 dark:text-orange-400'
-                : 'border-stone-300 text-stone-600 dark:border-stone-700 dark:text-stone-300'
-            "
-            @click="form.priceLevel = form.priceLevel === l ? null : l"
+            class="rounded-full bg-orange-500/10 px-2.5 py-0.5 text-xs font-bold text-orange-600 dark:text-orange-400"
+            @click="form.spend = null"
           >
-            <span class="text-sm font-bold">{{ SYMBOLS[l] }}</span>
-            <span class="mt-0.5 text-[10px] leading-tight text-stone-400 dark:text-stone-500">
-              {{ bandLabel(l, region, locale) }}
-            </span>
+            💰 {{ formatBudgetWindow(form.spend, region, locale) }} ✕
           </button>
+          <span v-else class="text-xs text-stone-400 dark:text-stone-500">
+            {{ t('diary.priceUnset') }}
+          </span>
         </div>
+        <BudgetRangeSlider v-model="form.spend" :region="region" :aria-label="t('diary.price')" />
         <p class="mt-1 text-xs text-stone-400 dark:text-stone-500">{{ t('diary.priceHint') }}</p>
       </section>
 

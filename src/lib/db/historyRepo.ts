@@ -1,9 +1,14 @@
-import type { DrawConditions, DrawRecord, Restaurant } from '@/types/models'
+import type { DrawConditions, DrawRecord, Meal, Restaurant } from '@/types/models'
 import { cuisinesOfTypes } from '@/lib/places/cuisines'
 import type { BlockRow, EatWhatDB } from './schema'
 
-export function mealForHour(hour: number): 'lunch' | 'dinner' {
-  return hour < 16 ? 'lunch' : 'dinner'
+/** Which meal a local hour belongs to — HK rhythm: 早餐 → 午餐 → 下午茶 → 晚餐 → 宵夜. */
+export function mealForHour(hour: number): Meal {
+  if (hour >= 5 && hour <= 10) return 'breakfast'
+  if (hour >= 11 && hour <= 14) return 'lunch'
+  if (hour >= 15 && hour <= 17) return 'tea'
+  if (hour >= 18 && hour <= 21) return 'dinner'
+  return 'lateNight'
 }
 
 export interface DayGroup {

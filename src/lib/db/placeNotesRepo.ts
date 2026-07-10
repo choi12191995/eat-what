@@ -6,7 +6,7 @@ function hasContent(n: Omit<PlaceNote, 'updatedAt'>): boolean {
   return !!(
     n.myRating ||
     n.note?.trim() ||
-    n.priceLevel ||
+    n.spend ||
     n.cuisines?.length ||
     n.keywords?.length ||
     n.closed

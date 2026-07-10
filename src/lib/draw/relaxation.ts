@@ -24,7 +24,7 @@ export function suggestRelaxations(
   tryDrop('dropOpenNow', cond.openNowOnly, { skipOpenNow: true })
   tryDrop('dropArriveAt', !cond.openNowOnly && cond.arriveAt !== null, { skipArriveAt: true })
   tryDrop('dropMinRating', cond.minRating !== null, { skipMinRating: true })
-  tryDrop('dropBudget', cond.budgetLevels.length > 0, { skipBudget: true })
+  tryDrop('dropBudget', cond.budgetRange !== null, { skipBudget: true })
   tryDrop('dropRequirePrice', cond.requirePrice, { skipRequirePrice: true })
   tryDrop(
     'dropRecentExclusion',

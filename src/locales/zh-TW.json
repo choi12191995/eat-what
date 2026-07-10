@@ -60,7 +60,7 @@
     "originSearchPlaceholder": "搜尋地點或區域…",
     "more": "更多",
     "openNow": "只要營業中",
-    "arriveAt": "預計到達時間（今日）",
+    "arriveAt": "預計到達時間",
     "minRating": "最低評分",
     "partySize": "用餐人數",
     "noRepeat": "略過最近吃過的",
@@ -83,7 +83,7 @@
     "arriveDate": "邊日去",
     "today": "今日",
     "planHint": "呢餐會儲存做未來計劃 — 去到嗰日之前，喺紀錄嘅「📅 即將嘅計劃」度搵佢。",
-    "budgetRange": "拉兩邊設定價錢範圍",
+    "budgetRange": "每人使費範圍 — 兩粒掣拉埋一齊＝準確銀碼",
     "requirePrice": "只要有價錢資料嘅餐廳"
   },
   "result": {
@@ -230,7 +230,10 @@
     "statTotal": "餐已決定",
     "statPlaces": "間食過",
     "statStreak": "天連續",
-    "upcoming": "即將嘅計劃"
+    "upcoming": "即將嘅計劃",
+    "breakfast": "早餐",
+    "tea": "下午茶",
+    "lateNight": "宵夜"
   },
   "pwa": {
     "iosTitle": "安裝食乜好",
@@ -348,13 +351,14 @@
     "note": "食咗乜",
     "notePlaceholder": "食咗乜？好唔好食？下次想試乜？",
     "price": "每人使費（修正）",
-    "priceHint": "揀返真實價位，之後預算篩選會信你嗰個。",
+    "priceHint": "記低每人實際使費 — 之後預算篩選會信你，唔信 Google。",
     "cuisines": "菜式修正",
     "cuisinesHint": "Google 分類錯咗？揀返啱嘅（最多 3 個）。",
     "keywords": "啱佢嘅口味標籤",
     "blacklist": "永不再抽呢間",
     "closed": "已永久結業",
     "closedHint": "剔咗之後，每次抽都會自動跳過呢間。",
-    "save": "儲存食記"
+    "save": "儲存食記",
+    "priceUnset": "未記錄"
   }
 }

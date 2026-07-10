@@ -1,4 +1,5 @@
 import type { CuisineId } from '@/lib/places/cuisines'
+import type { BudgetWindow } from '@/lib/format/price'
 
 export interface LatLng {
   lat: number
@@ -55,8 +56,10 @@ export interface DrawConditions {
   cuisines: { include: CuisineId[]; exclude: CuisineId[] }
   /** Fine-grained tag ids (keywords.ts) — each adds one Text Search per draw */
   keywords: string[]
-  /** OR-set of acceptable price levels; empty = any */
-  budgetLevels: PriceLevel[]
+  /** Per-person spend window in local currency; null = any. Filtered
+   *  client-side (the API has no price filter) against a place's explicit
+   *  priceRange, its $-level band, or the diner's own diary spend. */
+  budgetRange: BudgetWindow | null
   /** Drop places Google has no price data for (off by default — small local
    *  shops often have none and hiding them would bias the wheel) */
   requirePrice: boolean
@@ -88,10 +91,14 @@ export interface ConditionPreset {
 
 export type DrawAction = 'accepted' | 'respun'
 
+/** Meal slots by local hour — history labelling only (notifications stay
+ *  lunch/dinner; nobody wants a push about 宵夜). */
+export type Meal = 'breakfast' | 'lunch' | 'tea' | 'dinner' | 'lateNight'
+
 export interface DrawRecord {
   id?: number
   timestamp: number
-  meal: 'lunch' | 'dinner'
+  meal: Meal
   conditions: DrawConditions
   restaurant: Restaurant
   action: DrawAction
@@ -113,8 +120,9 @@ export interface PlaceNote {
   myRating?: number
   /** Food diary free text: what I ate, how it was */
   note?: string
-  /** Corrected per-person budget band — replaces Google's price level */
-  priceLevel?: PriceLevel
+  /** What I actually paid per person — exact (min===max) or a range;
+   *  replaces Google's price data in the budget filter */
+  spend?: BudgetWindow
   /** Corrected cuisines — replace Google types for include/exclude matching */
   cuisines?: CuisineId[]
   /** Craving tags (keyword tag ids) the diner says fit this place */

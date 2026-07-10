@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 import confetti from 'canvas-confetti'
 
 import type { Restaurant } from '@/types/models'
+import BottomSheet from '@/components/ui/BottomSheet.vue'
 import {
   fetchRoom,
   hostToken,
@@ -124,7 +125,7 @@ const plannedLabel = computed(() => {
   }).format(at)
 })
 
-// QR block: friends inside the app scan it (or type the code) to join —
+// QR sheet: friends inside the app scan it (or type the code) to join —
 // the iOS-proof path, since tapped links always open the browser instead
 // of the installed PWA. External camera apps still get the URL → browser.
 const qrOpen = ref(false)
@@ -277,32 +278,35 @@ async function shareRoom() {
           </button>
           <button
             type="button"
-            class="flex-1 rounded-2xl border py-3 text-sm font-semibold"
-            :class="
-              qrOpen
-                ? 'border-orange-400 bg-orange-500/10 text-orange-600 dark:text-orange-400'
-                : 'border-stone-300 text-stone-600 dark:border-stone-700 dark:text-stone-300'
-            "
-            @click="qrOpen = !qrOpen"
+            class="flex-1 rounded-2xl border border-stone-300 py-3 text-sm font-semibold text-stone-600 dark:border-stone-700 dark:text-stone-300"
+            @click="qrOpen = true"
           >
             📱 {{ t('room.qr') }}
           </button>
         </div>
-
-        <div
-          v-if="qrOpen"
-          class="mt-3 flex flex-col items-center gap-2 rounded-3xl border border-stone-200 p-5 text-center dark:border-stone-800"
-        >
-          <!-- white pad keeps the code scannable in dark mode -->
-          <div class="rounded-2xl bg-white p-3 shadow-sm">
-            <canvas ref="qrCanvas" class="block h-52 w-52" />
-          </div>
-          <p class="text-lg font-black tracking-[0.2em]">{{ roomId }}</p>
-          <p class="max-w-xs text-xs text-stone-400 dark:text-stone-500">
-            {{ qrFailed ? t('room.qrFailed') : t('room.qrHint') }}
-          </p>
-        </div>
       </div>
     </template>
+
+    <!-- QR sheet: same slide-from-bottom overlay as "Join a room" -->
+    <BottomSheet :open="qrOpen" @close="qrOpen = false">
+      <div class="flex flex-col items-center gap-3 px-6 pt-1 pb-6 text-center">
+        <h2 class="text-lg font-bold">📱 {{ t('room.qr') }}</h2>
+        <!-- white pad keeps the code scannable in dark mode -->
+        <div class="rounded-2xl bg-white p-3 shadow-sm">
+          <canvas ref="qrCanvas" class="block h-52 w-52" />
+        </div>
+        <p class="text-2xl font-black tracking-[0.25em]">{{ roomId }}</p>
+        <p class="max-w-xs text-xs text-stone-400 dark:text-stone-500">
+          {{ qrFailed ? t('room.qrFailed') : t('room.qrHint') }}
+        </p>
+        <button
+          type="button"
+          class="mt-1 w-full max-w-xs rounded-2xl border border-stone-300 py-2.5 text-sm font-semibold text-stone-600 dark:border-stone-700 dark:text-stone-300"
+          @click="qrOpen = false"
+        >
+          {{ t('common.close') }}
+        </button>
+      </div>
+    </BottomSheet>
   </div>
 </template>

@@ -29,11 +29,19 @@ function restaurant(id: string, types: string[] = ['cantonese_restaurant']): Res
 }
 
 describe('mealForHour', () => {
-  it('splits lunch and dinner at 16:00', () => {
+  it('covers the full HK day: 早餐 → 午餐 → 下午茶 → 晚餐 → 宵夜', () => {
+    expect(mealForHour(5)).toBe('breakfast')
+    expect(mealForHour(8)).toBe('breakfast')
+    expect(mealForHour(10)).toBe('breakfast')
     expect(mealForHour(11)).toBe('lunch')
-    expect(mealForHour(15)).toBe('lunch')
-    expect(mealForHour(16)).toBe('dinner')
+    expect(mealForHour(14)).toBe('lunch')
+    expect(mealForHour(15)).toBe('tea')
+    expect(mealForHour(17)).toBe('tea')
+    expect(mealForHour(18)).toBe('dinner')
     expect(mealForHour(21)).toBe('dinner')
+    expect(mealForHour(22)).toBe('lateNight')
+    expect(mealForHour(2)).toBe('lateNight')
+    expect(mealForHour(4)).toBe('lateNight')
   })
 })
 

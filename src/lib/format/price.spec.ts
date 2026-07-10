@@ -1,7 +1,39 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Restaurant } from '@/types/models'
-import { bandLabel, formatPrice, levelFromPriceRange } from './price'
+import {
+  bandLabel,
+  bandWindow,
+  formatBudgetWindow,
+  formatPrice,
+  levelFromPriceRange,
+  windowsOverlap,
+} from './price'
+
+describe('budget windows', () => {
+  it('bandWindow maps $-levels onto regional edges', () => {
+    expect(bandWindow(1, 'HK')).toEqual({ min: 0, max: 50 })
+    expect(bandWindow(2, 'HK')).toEqual({ min: 50, max: 150 })
+    expect(bandWindow(4, 'HK')).toEqual({ min: 400, max: null })
+    expect(bandWindow(1, 'JP')).toEqual({ min: 0, max: 1000 })
+    expect(bandWindow(3, 'OTHER')).toEqual({ min: 150, max: 400 }) // HK fallback
+  })
+
+  it('windowsOverlap handles bounded, unbounded and point windows', () => {
+    expect(windowsOverlap({ min: 0, max: 150 }, { min: 100, max: 200 })).toBe(true)
+    expect(windowsOverlap({ min: 0, max: 90 }, { min: 100, max: 200 })).toBe(false)
+    expect(windowsOverlap({ min: 400, max: null }, { min: 500, max: null })).toBe(true)
+    expect(windowsOverlap({ min: 0, max: 300 }, { min: 400, max: null })).toBe(false)
+    expect(windowsOverlap({ min: 120, max: 120 }, { min: 100, max: 150 })).toBe(true)
+  })
+
+  it('formats windows for humans', () => {
+    expect(formatBudgetWindow({ min: 0, max: 50 }, 'HK', 'en')).toMatch(/^< /)
+    expect(formatBudgetWindow({ min: 400, max: null }, 'HK', 'en')).toMatch(/\+$/)
+    expect(formatBudgetWindow({ min: 120, max: 120 }, 'HK', 'en')).toMatch(/^≈/)
+    expect(formatBudgetWindow({ min: 50, max: 150 }, 'OTHER', 'en')).toBe('$50–150')
+  })
+})
 
 function place(over: Partial<Restaurant>): Restaurant {
   return {

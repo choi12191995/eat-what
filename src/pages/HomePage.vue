@@ -60,7 +60,7 @@ const activeFilterCount = computed(() => {
     c.cuisines.include.length +
     c.cuisines.exclude.length +
     c.keywords.length +
-    (c.budgetLevels.length ? 1 : 0) +
+    (c.budgetRange ? 1 : 0) +
     (c.minRating !== null ? 1 : 0)
   )
 })

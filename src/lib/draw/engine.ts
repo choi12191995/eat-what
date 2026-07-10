@@ -12,7 +12,7 @@ import { isOpenAt, minutesFromHHmm } from '@/lib/places/openingHours'
 import type { PlacesProvider } from '@/lib/places/provider'
 import { haversineMeters } from '@/lib/geo/distance'
 import type { Region } from '@/lib/geo/region'
-import { levelFromPriceRange } from '@/lib/format/price'
+import { bandWindow, windowsOverlap, type BudgetWindow } from '@/lib/format/price'
 import { cryptoRandomInt, shuffle, weightedRandomIndex } from './random'
 import { MAX_WHEEL_SEGMENTS, RADIUS_STEPS } from './defaults'
 import { suggestRelaxations } from './relaxation'
@@ -71,6 +71,25 @@ export function queryRadiusFor(radiusMeters: number): number {
 // instead of dropping borderline places the user would happily walk to.
 const RADIUS_GRACE = 1.15
 
+/**
+ * A place's per-person money window: diary spend (newest truth) → Google's
+ * explicit priceRange → the $-level's regional band. Undefined = no data.
+ */
+export function placeBudgetWindow(
+  r: Restaurant,
+  note: PlaceNote | undefined,
+  region: Region,
+): BudgetWindow | undefined {
+  if (note?.spend) return note.spend
+  const start = r.priceRange?.start?.units
+  const end = r.priceRange?.end?.units
+  if (start !== undefined || end !== undefined) {
+    return { min: start ?? 0, max: end ?? null }
+  }
+  if (r.priceLevel) return bandWindow(r.priceLevel, region)
+  return undefined
+}
+
 export function filterPool(
   raw: readonly Restaurant[],
   cond: DrawConditions,
@@ -118,16 +137,16 @@ export function filterPool(
       const rating = note?.myRating ?? r.rating
       if (rating === undefined || rating < cond.minRating) return false
     }
-    const level =
-      note?.priceLevel ??
-      r.priceLevel ??
-      (r.priceRange ? levelFromPriceRange(r.priceRange, ctx.region) : undefined)
-    if (!o.skipRequirePrice && cond.requirePrice && level === undefined) return false
-    if (!o.skipBudget && cond.budgetLevels.length > 0) {
+    // Budget: everything maps into one money window per person — the diary
+    // spend (newest truth) beats Google's explicit priceRange, which beats
+    // the coarse $-level band. Overlap = the place can fit the wallet.
+    const window = placeBudgetWindow(r, note, ctx.region)
+    if (!o.skipRequirePrice && cond.requirePrice && !window) return false
+    if (!o.skipBudget && cond.budgetRange && window) {
       // Price-unknown places pass — dropping them would bias against small
       // local shops that simply have no price data on Google. (requirePrice
       // above is the explicit opt-in to drop them.)
-      if (level !== undefined && !cond.budgetLevels.includes(level)) return false
+      if (!windowsOverlap(cond.budgetRange, window)) return false
     }
     return true
   })
