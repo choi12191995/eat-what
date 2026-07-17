@@ -21,7 +21,8 @@ const ORIGIN = { lat: 22.2819, lng: 114.158 }
 function place(over: Partial<Restaurant>): Restaurant {
   return {
     id: over.id ?? 'p1',
-    name: 'Test Place',
+    // distinct default names — runDraw brand-dedupes same-named places
+    name: `Test ${over.id ?? 'p1'}`,
     location: ORIGIN,
     types: ['restaurant'],
     photoNames: [],
@@ -115,6 +116,77 @@ describe('filterPool', () => {
     expect(filterPool(raw, cond({ requirePrice: true }), ctx()).map((r) => r.id)).toEqual(['priced'])
     // relaxation override restores them
     expect(filterPool(raw, cond({ requirePrice: true }), ctx(), { skipRequirePrice: true })).toHaveLength(2)
+  })
+
+  it('noFastFood drops typed fast food; noChains drops list + local evidence', () => {
+    const raw = [
+      place({ id: 'ff', types: ['fast_food_restaurant'] }),
+      place({ id: 'chain', name: '譚仔三哥米線' }),
+      place({ id: 'local2a', name: '無名連鎖' }),
+      place({ id: 'indie', name: '金華冰廳' }),
+    ]
+    expect(filterPool(raw, cond({ noFastFood: true }), ctx()).map((r) => r.id)).toEqual([
+      'chain',
+      'local2a',
+      'indie',
+    ])
+    const withEvidence = ctx({ chainBrands: new Set(['無名連鎖']) })
+    expect(filterPool(raw, cond({ noChains: true }), withEvidence).map((r) => r.id)).toEqual([
+      'ff',
+      'indie',
+    ])
+    // relaxation override restores everything
+    expect(
+      filterPool(raw, cond({ noFastFood: true, noChains: true }), withEvidence, {
+        skipChains: true,
+      }),
+    ).toHaveLength(4)
+  })
+
+  it('keywordsExclude drops matches by name, type, and diary tag — nothing else', () => {
+    const raw = [
+      place({ id: 'byName', name: '譚記火鍋城' }),
+      place({ id: 'byType', name: 'Noodle Lab', types: ['ramen_restaurant'] }),
+      place({ id: 'byDiary', name: 'Secret Kitchen' }),
+      place({ id: 'safe', name: 'Hot Dog House' }), // "hot" must NOT match hotpot
+    ]
+    const notes = new Map([
+      ['byDiary', { placeId: 'byDiary', name: 'Secret Kitchen', keywords: ['hotpot'], updatedAt: 0 }],
+    ])
+    const out = filterPool(
+      raw,
+      cond({ keywordsExclude: ['hotpot', 'ramen'] }),
+      ctx({ notes }),
+    )
+    expect(out.map((r) => r.id)).toEqual(['safe'])
+  })
+
+  it('runDraw dedupes same-brand branches to the nearest one', async () => {
+    const provider = {
+      kind: 'mock' as const,
+      async searchNearby() {
+        // both branches inside the 1 km radius — dedupe, not radius, must decide
+        return [
+          place({ id: 'm-far', name: '麥當勞（遠店）', location: { lat: 22.288, lng: 114.158 } }),
+          place({ id: 'm-near', name: '麥當勞（近店）', location: { lat: 22.283, lng: 114.158 } }),
+          place({ id: 'indie', name: '金華冰廳' }),
+        ]
+      },
+      async searchText() {
+        return []
+      },
+      async autocomplete() {
+        return []
+      },
+      async resolvePlaceLocation() {
+        return { location: ORIGIN, label: 'x' }
+      },
+      photoUrl() {
+        return null
+      },
+    }
+    const out = await runDraw(cond(), ORIGIN, { provider, lang: 'en', region: 'HK' })
+    expect(out.pool.map((r) => r.id).sort()).toEqual(['indie', 'm-near'])
   })
 
   it('arriveDate checks the planned weekday, not today', () => {

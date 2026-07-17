@@ -56,6 +56,12 @@ export interface DrawConditions {
   cuisines: { include: CuisineId[]; exclude: CuisineId[] }
   /** Fine-grained tag ids (keywords.ts) — each adds one Text Search per draw */
   keywords: string[]
+  /** Tags to AVOID — no search cost; matched by name/type/diary tags */
+  keywordsExclude: string[]
+  /** Drop fast-food places (Google's fast_food_restaurant type) */
+  noFastFood: boolean
+  /** Drop chain restaurants — curated brand list + 2+-branches-in-range evidence */
+  noChains: boolean
   /** Per-person spend window in local currency; null = any. Filtered
    *  client-side (the API has no price filter) against a place's explicit
    *  priceRange, its $-level band, or the diner's own diary spend. */
@@ -138,6 +144,7 @@ export type RelaxationKind =
   | 'dropMinRating'
   | 'dropBudget'
   | 'dropRequirePrice'
+  | 'dropChains'
   | 'dropRecentExclusion'
   | 'widenRadius'
 

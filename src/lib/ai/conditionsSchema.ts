@@ -15,6 +15,9 @@ export interface AiConditionPatch {
   cuisinesInclude?: CuisineId[]
   cuisinesExclude?: CuisineId[]
   keywords?: string[]
+  keywordsExclude?: string[]
+  noFastFood?: boolean
+  noChains?: boolean
   budgetRange?: BudgetWindow
   radiusMeters?: number
   openNowOnly?: boolean
@@ -52,6 +55,9 @@ Fields:
 - "cuisinesInclude": array from [${cuisineList}]
 - "cuisinesExclude": same vocabulary, for things the user refuses
 - "keywords": array (max ${MAX_KEYWORD_TAGS}) from [${keywordList}]
+- "keywordsExclude": same vocabulary, for cravings they REFUSE ("唔要打邊爐"→["hotpot"])
+- "noFastFood": true when they refuse fast food ("唔要快餐")
+- "noChains": true when they refuse chain restaurants ("唔要連鎖店")
 - "budgetMin"/"budgetMax": per-person spend, NUMBERS in the diner's local currency. "每人一百蚊以內"→budgetMax 100, "唔好太平"→budgetMin 100, "人均二三百"→budgetMin 200 budgetMax 300
 - "radiusMeters": integer ${RADIUS_MIN}-${RADIUS_MAX} (meters). "近/close"→500, "行遠啲/anywhere"→2000
 - "openNowOnly": boolean
@@ -92,14 +98,17 @@ export function sanitizeAiConditions(raw: unknown): AiConditionPatch | null {
   const exclude = cuisineArray(r.cuisinesExclude)
   if (exclude) patch.cuisinesExclude = exclude
 
-  if (Array.isArray(r.keywords)) {
-    const tags = [
-      ...new Set(
-        r.keywords.filter((x): x is string => typeof x === 'string' && !!keywordTagById(x)),
-      ),
-    ].slice(0, MAX_KEYWORD_TAGS)
-    if (tags.length || r.keywords.length === 0) patch.keywords = tags
+  const tagArray = (v: unknown): string[] | undefined => {
+    if (!Array.isArray(v)) return undefined
+    const tags = [...new Set(v.filter((x): x is string => typeof x === 'string' && !!keywordTagById(x)))]
+    return tags.length || v.length === 0 ? tags : undefined
   }
+  const keywords = tagArray(r.keywords)
+  if (keywords) patch.keywords = keywords.slice(0, MAX_KEYWORD_TAGS)
+  const keywordsExclude = tagArray(r.keywordsExclude)
+  if (keywordsExclude) patch.keywordsExclude = keywordsExclude
+  if (typeof r.noFastFood === 'boolean') patch.noFastFood = r.noFastFood
+  if (typeof r.noChains === 'boolean') patch.noChains = r.noChains
 
   const money = (v: unknown): number | undefined =>
     typeof v === 'number' && Number.isFinite(v) && v >= 0
@@ -161,6 +170,19 @@ export function applyConditionPatch(cond: DrawConditions, patch: AiConditionPatc
   if (patch.keywords !== undefined) {
     cond.keywords = patch.keywords
     applied.push('keywords')
+  }
+  if (patch.keywordsExclude !== undefined) {
+    // include wins when the model contradicts itself on the same tag
+    cond.keywordsExclude = patch.keywordsExclude.filter((id) => !cond.keywords.includes(id))
+    if (!applied.includes('keywords')) applied.push('keywords')
+  }
+  if (patch.noFastFood !== undefined) {
+    cond.noFastFood = patch.noFastFood
+    applied.push('chains')
+  }
+  if (patch.noChains !== undefined) {
+    cond.noChains = patch.noChains
+    if (!applied.includes('chains')) applied.push('chains')
   }
   if (patch.budgetRange !== undefined) {
     cond.budgetRange = patch.budgetRange

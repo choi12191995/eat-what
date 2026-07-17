@@ -18,6 +18,9 @@ export function makeDefaultConditions(): DrawConditions {
   return {
     cuisines: { include: [], exclude: [] },
     keywords: [],
+    keywordsExclude: [],
+    noFastFood: false,
+    noChains: false,
     budgetRange: null,
     requirePrice: false,
     radiusMeters: 1000,

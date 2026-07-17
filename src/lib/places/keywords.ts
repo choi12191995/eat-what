@@ -18,6 +18,8 @@ export interface KeywordTag {
   id: string
   emoji: string
   q: { 'zh-TW': string; en: string }
+  /** Table A types that mean this tag — lets EXCLUSION catch places by type */
+  types?: string[]
 }
 
 export interface KeywordGroup {
@@ -64,6 +66,7 @@ export const KEYWORD_GROUPS: KeywordGroup[] = [
     emoji: '🎌',
     tags: [
       { id: 'omakase', emoji: '🍣', q: { 'zh-TW': '廚師發辦 omakase', en: 'omakase' } },
+      { id: 'ramen', emoji: '🍜', q: { 'zh-TW': '拉麵', en: 'ramen' }, types: ['ramen_restaurant'] },
       { id: 'izakaya', emoji: '🏮', q: { 'zh-TW': '居酒屋', en: 'izakaya' } },
       { id: 'yakiniku', emoji: '🥩', q: { 'zh-TW': '日式燒肉', en: 'yakiniku' } },
       { id: 'teppanyaki', emoji: '🔥', q: { 'zh-TW': '鐵板燒', en: 'teppanyaki' } },
@@ -112,4 +115,35 @@ const tagById = new Map<string, KeywordTag>(
 
 export function keywordTagById(id: string): KeywordTag | undefined {
   return tagById.get(id)
+}
+
+const stripPattern = /[\s·・,，。()（）【】\-–—'']/g
+
+function normalized(s: string): string {
+  return s.toLowerCase().replace(stripPattern, '')
+}
+
+const hasCjk = (s: string) => /[㐀-鿿]/.test(s)
+
+/**
+ * Does a place LOOK like this tag? Used by keyword EXCLUSION (opt-out), which
+ * can't run a search — it matches by name terms, Table A types, and the
+ * diner's own diary craving tags. Term rules guard against generic-word false
+ * positives: the zh query splits into alternatives (火鍋／打邊爐), the en query
+ * matches only as a whole compound ("hotpot", never "hot"). Heuristic by
+ * nature: a hotpot place with an oblique name and no diary tag slips through —
+ * that's the honest limit.
+ */
+export function matchesKeywordTag(
+  place: { name: string; types: string[] },
+  tag: KeywordTag,
+  diaryKeywords?: readonly string[],
+): boolean {
+  if (diaryKeywords?.includes(tag.id)) return true
+  if (tag.types?.some((t) => place.types.includes(t))) return true
+  const name = normalized(place.name)
+  const terms = [...tag.q['zh-TW'].split(' ').map(normalized), normalized(tag.q.en)]
+  return terms
+    .filter((term) => (hasCjk(term) ? term.length >= 2 : term.length >= 4))
+    .some((term) => name.includes(term))
 }

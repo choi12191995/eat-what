@@ -26,6 +26,7 @@ export function suggestRelaxations(
   tryDrop('dropMinRating', cond.minRating !== null, { skipMinRating: true })
   tryDrop('dropBudget', cond.budgetRange !== null, { skipBudget: true })
   tryDrop('dropRequirePrice', cond.requirePrice, { skipRequirePrice: true })
+  tryDrop('dropChains', cond.noFastFood || cond.noChains, { skipChains: true })
   tryDrop(
     'dropRecentExclusion',
     cond.excludeRecentDays !== null && ctx.recentIds.size > 0,

@@ -63,6 +63,17 @@ describe('sanitizeAiConditions', () => {
     expect(patch.keywords).toHaveLength(3)
   })
 
+  it('keyword opt-outs and chain refusals pass through validated', () => {
+    const patch = sanitizeAiConditions({
+      keywordsExclude: ['hotpot', 'nonsense', 'ramen'],
+      noFastFood: true,
+      noChains: true,
+    })!
+    expect(patch.keywordsExclude).toEqual(['hotpot', 'ramen'])
+    expect(patch.noFastFood).toBe(true)
+    expect(patch.noChains).toBe(true)
+  })
+
   it('returns null for garbage', () => {
     expect(sanitizeAiConditions(null)).toBeNull()
     expect(sanitizeAiConditions('sushi')).toBeNull()

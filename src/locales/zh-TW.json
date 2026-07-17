@@ -30,7 +30,8 @@
       "dropBudget": "不限預算",
       "dropRecentExclusion": "允許最近去過的店",
       "widenRadius": "擴大到 {radius}",
-      "dropRequirePrice": "接受冇價錢資料嘅餐廳"
+      "dropRequirePrice": "接受冇價錢資料嘅餐廳",
+      "dropChains": "接受連鎖／快餐"
     }
   },
   "conditions": {
@@ -51,7 +52,7 @@
       "remove": "刪除組合"
     },
     "keywords": "想食啲特定嘢？",
-    "keywordHint": "最多揀 {max} 個——每個都會像本地人一樣搜尋 Google（茶餐廳、火鍋、點心…）。",
+    "keywordHint": "㩒一下＝想食，㩒兩下＝唔要 — 每次最多 {max} 個「想食」標籤（「唔要」冇上限）。",
     "budget": "預算（每人）",
     "budgetHint": "沒有價格資料的店仍會出現，標示為「價格未知」。",
     "radius": "距離",
@@ -84,7 +85,10 @@
     "today": "今日",
     "planHint": "呢餐會儲存做未來計劃 — 去到嗰日之前，喺紀錄嘅「📅 即將嘅計劃」度搵佢。",
     "budgetRange": "每人使費範圍 — 兩粒掣拉埋一齊＝準確銀碼",
-    "requirePrice": "只要有價錢資料嘅餐廳"
+    "requirePrice": "只要有價錢資料嘅餐廳",
+    "noFastFood": "唔要快餐",
+    "noChains": "唔要連鎖店",
+    "noChainsHint": "靠品牌名單認人，加埋「搜尋範圍內開咗 2 間或以上」嘅自動偵測。"
   },
   "result": {
     "openNow": "營業中",
@@ -218,7 +222,8 @@
     "dessertSoup": "糖水舖",
     "halal": "清真",
     "themed": "主題餐廳",
-    "kidFriendly": "親子餐廳"
+    "kidFriendly": "親子餐廳",
+    "ramen": "拉麵"
   },
   "history": {
     "empty": "還沒有紀錄，抽中的餐廳會出現在這裡。",

@@ -30,7 +30,8 @@
       "dropBudget": "Any budget",
       "dropRecentExclusion": "Allow recent places",
       "widenRadius": "Widen to {radius}",
-      "dropRequirePrice": "Allow places without price data"
+      "dropRequirePrice": "Allow places without price data",
+      "dropChains": "Allow chains & fast food"
     }
   },
   "conditions": {
@@ -51,7 +52,7 @@
       "remove": "Delete preset"
     },
     "keywords": "Craving something specific?",
-    "keywordHint": "Pick up to {max} — each searches Google like a local would (cha chaan teng, hot pot, dim sum…).",
+    "keywordHint": "Tap once to crave it, twice to avoid it — up to {max} cravings per draw (avoiding is free).",
     "budget": "Budget (per person)",
     "budgetHint": "Places without price data still appear, marked “price n/a”.",
     "radius": "Distance",
@@ -84,7 +85,10 @@
     "today": "Today",
     "planHint": "Saved as an upcoming plan — find it under 📅 Upcoming in History until the day comes.",
     "budgetRange": "Per-person spend — both thumbs together = exact amount",
-    "requirePrice": "Only places with price data"
+    "requirePrice": "Only places with price data",
+    "noFastFood": "No fast food",
+    "noChains": "No chain stores",
+    "noChainsHint": "Recognized by a curated brand list, plus any brand with 2+ branches inside your search range."
   },
   "result": {
     "openNow": "Open now",
@@ -218,7 +222,8 @@
     "dessertSoup": "Tong sui (dessert soup)",
     "halal": "Halal",
     "themed": "Themed restaurant",
-    "kidFriendly": "Kid-friendly"
+    "kidFriendly": "Kid-friendly",
+    "ramen": "Ramen"
   },
   "history": {
     "empty": "No draws yet. Your picks will appear here.",

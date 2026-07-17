@@ -60,5 +60,41 @@ const chipClass: Record<ChipState, string> = {
       </button>
     </div>
     <p class="mt-2 text-xs text-stone-400 dark:text-stone-500">{{ t('conditions.cuisineHint') }}</p>
+
+    <!-- what KIND of shop: independent of cuisine -->
+    <div class="mt-3 flex flex-wrap gap-2">
+      <button
+        type="button"
+        class="rounded-full border px-3 py-1.5 text-sm transition-all active:scale-95"
+        :class="
+          drawStore.conditions.noFastFood
+            ? 'border-red-300 bg-red-50 font-semibold text-red-600 dark:border-red-900 dark:bg-red-950 dark:text-red-400'
+            : 'border-stone-300 text-stone-600 dark:border-stone-700 dark:text-stone-300'
+        "
+        @click="drawStore.conditions.noFastFood = !drawStore.conditions.noFastFood"
+      >
+        🍔 {{ t('conditions.noFastFood') }}
+        <span v-if="drawStore.conditions.noFastFood" aria-hidden="true">✕</span>
+      </button>
+      <button
+        type="button"
+        class="rounded-full border px-3 py-1.5 text-sm transition-all active:scale-95"
+        :class="
+          drawStore.conditions.noChains
+            ? 'border-red-300 bg-red-50 font-semibold text-red-600 dark:border-red-900 dark:bg-red-950 dark:text-red-400'
+            : 'border-stone-300 text-stone-600 dark:border-stone-700 dark:text-stone-300'
+        "
+        @click="drawStore.conditions.noChains = !drawStore.conditions.noChains"
+      >
+        ⛓️ {{ t('conditions.noChains') }}
+        <span v-if="drawStore.conditions.noChains" aria-hidden="true">✕</span>
+      </button>
+    </div>
+    <p
+      v-if="drawStore.conditions.noChains"
+      class="mt-1.5 text-xs text-stone-400 dark:text-stone-500"
+    >
+      {{ t('conditions.noChainsHint') }}
+    </p>
   </div>
 </template>

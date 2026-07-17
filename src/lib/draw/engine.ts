@@ -7,7 +7,19 @@ import type {
   RelaxationSuggestion,
 } from '@/types/models'
 import { typesForCuisines, CUISINES } from '@/lib/places/cuisines'
-import { keywordTagById, MAX_KEYWORD_TAGS, type KeywordTag } from '@/lib/places/keywords'
+import {
+  keywordTagById,
+  matchesKeywordTag,
+  MAX_KEYWORD_TAGS,
+  type KeywordTag,
+} from '@/lib/places/keywords'
+import {
+  dedupeBrands,
+  isFastFood,
+  isKnownChain,
+  multiBranchBrands,
+  normalizeBrand,
+} from '@/lib/places/chains'
 import { isOpenAt, minutesFromHHmm } from '@/lib/places/openingHours'
 import type { PlacesProvider } from '@/lib/places/provider'
 import { haversineMeters } from '@/lib/geo/distance'
@@ -34,6 +46,8 @@ export interface FilterContext {
   recentIds: ReadonlySet<string>
   /** Diner's own diary corrections by place id — newer truth than Google */
   notes?: ReadonlyMap<string, PlaceNote>
+  /** Brands seen at 2+ locations in this search — local chain evidence */
+  chainBrands?: ReadonlySet<string>
   /** "Today" for the arrive-at weekday; injectable for tests */
   now?: Date
 }
@@ -44,6 +58,7 @@ export interface FilterOverrides {
   skipMinRating?: boolean
   skipBudget?: boolean
   skipRequirePrice?: boolean
+  skipChains?: boolean
   skipRecent?: boolean
 }
 
@@ -119,6 +134,22 @@ export function filterPool(
     if (haversineMeters(ctx.origin, r.location) > cond.radiusMeters * RADIUS_GRACE) return false
 
     // -- soft filters --
+    // Fast food by Google's own typing; chains by curated brand list plus
+    // "2+ branches inside this very search" self-evidence
+    if (!o.skipChains && cond.noFastFood && isFastFood(r.types)) return false
+    if (!o.skipChains && cond.noChains) {
+      if (isKnownChain(r.name) || ctx.chainBrands?.has(normalizeBrand(r.name))) return false
+    }
+    // Craving opt-outs: no search cost — matched by name terms, Table A
+    // types, and the diner's own diary craving tags
+    if (cond.keywordsExclude?.length) {
+      const diaryKeywords = note?.keywords
+      const excluded = cond.keywordsExclude.some((id) => {
+        const tag = keywordTagById(id)
+        return tag !== undefined && matchesKeywordTag(r, tag, diaryKeywords)
+      })
+      if (excluded) return false
+    }
     if (!o.skipOpenNow && cond.openNowOnly && r.openNow !== true) return false
     // Pre-draw for later: drop places whose known hours don't cover the
     // arrival time. Places with no structured hours pass (same philosophy
@@ -336,9 +367,12 @@ export async function runDraw(
     blockedIds: deps.blockedIds ?? new Set(),
     recentIds: deps.recentIds ?? new Set(),
     notes: deps.notes,
+    chainBrands: multiBranchBrands(raw),
   }
 
-  const pool = filterPool(raw, cond, ctx)
+  // One wheel slot per brand, nearest branch wins — three McDonald's at
+  // three addresses is one option, not three (field-reported).
+  const pool = dedupeBrands(filterPool(raw, cond, ctx), origin)
   if (pool.length === 0) {
     return {
       pool,

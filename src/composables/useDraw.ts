@@ -163,6 +163,10 @@ export function useDraw() {
       case 'dropRequirePrice':
         cond.requirePrice = false
         break
+      case 'dropChains':
+        cond.noFastFood = false
+        cond.noChains = false
+        break
       case 'dropRecentExclusion':
         cond.excludeRecentDays = null
         break
