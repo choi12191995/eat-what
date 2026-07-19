@@ -304,6 +304,16 @@
       "export": "匯出 JSON",
       "clear": "清除紀錄",
       "confirmClear": "確定刪除所有抽選紀錄？此操作無法復原。"
+    },
+    "chains": {
+      "title": "連鎖店／快餐篩選",
+      "sectionNote": "自訂 🍔 唔要快餐／⛓️ 唔要連鎖店會認得邊啲品牌。",
+      "edit": "編輯品牌名單",
+      "note": "而家生效 {n} 個關鍵字。抽嘅時候開咗「唔要快餐」或「唔要連鎖店」就會用。",
+      "custom": "自己加關鍵字",
+      "customPlaceholder": "例如 譚仔 / Starbucks",
+      "builtin": "內置品牌",
+      "builtinHint": "㩒一下停用 — 劃咗線嘅唔會再用。"
     }
   },
   "setup": {

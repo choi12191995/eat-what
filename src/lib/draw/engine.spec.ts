@@ -125,8 +125,8 @@ describe('filterPool', () => {
       place({ id: 'local2a', name: '無名連鎖' }),
       place({ id: 'indie', name: '金華冰廳' }),
     ]
+    // the brand pattern list applies under EITHER toggle, so 譚仔 falls too
     expect(filterPool(raw, cond({ noFastFood: true }), ctx()).map((r) => r.id)).toEqual([
-      'chain',
       'local2a',
       'indie',
     ])

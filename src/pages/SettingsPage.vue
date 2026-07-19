@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import AiSettings from '@/components/settings/AiSettings.vue'
 import BlocklistManager from '@/components/settings/BlocklistManager.vue'
+import ChainFilterSheet from '@/components/settings/ChainFilterSheet.vue'
 import DataControls from '@/components/settings/DataControls.vue'
 import NotificationSettings from '@/components/settings/NotificationSettings.vue'
 import { validateGoogleKey } from '@/lib/places/validateKey'
@@ -20,6 +21,8 @@ const languages: { value: AppLocale; label: string }[] = [
 
 const keyDraft = ref(settings.googleApiKey)
 const keyStatus = ref<'idle' | 'checking' | 'valid' | 'invalid' | 'network'>('idle')
+
+const chainSheetOpen = ref(false)
 
 async function saveKey() {
   const key = keyDraft.value.trim()
@@ -140,8 +143,26 @@ function clearKey() {
 
     <NotificationSettings />
 
+    <section class="mb-8">
+      <h2 class="mb-2 text-sm font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400">
+        ⛓️ {{ t('settings.chains.title') }}
+      </h2>
+      <p class="mb-2 text-xs text-stone-500 dark:text-stone-400">
+        {{ t('settings.chains.sectionNote') }}
+      </p>
+      <button
+        type="button"
+        class="rounded-xl border border-orange-300 bg-orange-500/10 px-4 py-2.5 text-sm font-semibold text-orange-600 active:scale-95 dark:border-orange-800 dark:text-orange-400"
+        @click="chainSheetOpen = true"
+      >
+        ✏️ {{ t('settings.chains.edit') }}
+      </button>
+    </section>
+
     <AiSettings />
     <BlocklistManager />
     <DataControls />
+
+    <ChainFilterSheet :open="chainSheetOpen" @close="chainSheetOpen = false" />
   </div>
 </template>

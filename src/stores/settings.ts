@@ -32,6 +32,11 @@ export const useSettingsStore = defineStore(
     // Named condition bundles for one-tap habits ("公司午餐", "週末探店"…)
     const presets = ref<ConditionPreset[]>([])
 
+    // Chain-filter tuning: curated patterns the user switched off, plus
+    // their own brand keywords (used when 唔要快餐/唔要連鎖店 is on)
+    const chainDisabled = ref<string[]>([])
+    const chainCustom = ref<string[]>([])
+
     // Meal notification schedule (Phase 2) — delivery lives on the push
     // worker; this is the local editing copy, synced on change
     const notifications = ref<NotificationPrefs>({
@@ -54,6 +59,8 @@ export const useSettingsStore = defineStore(
       aiModel,
       defaultConditions,
       presets,
+      chainDisabled,
+      chainCustom,
       notifications,
       setupDismissed,
       setupTicks,
@@ -71,6 +78,8 @@ export const useSettingsStore = defineStore(
         'aiModel',
         'defaultConditions',
         'presets',
+        'chainDisabled',
+        'chainCustom',
         'notifications',
         'setupDismissed',
         'setupTicks',

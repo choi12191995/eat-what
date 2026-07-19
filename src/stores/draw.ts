@@ -9,6 +9,7 @@ import type {
 } from '@/types/models'
 import type { Region } from '@/lib/geo/region'
 import { conditionsFingerprint, selectCandidates, type DrawOutcome } from '@/lib/draw/engine'
+import { chainConfigKey } from '@/lib/places/chains'
 import { hydrateConditions } from '@/lib/draw/defaults'
 import { useSettingsStore } from './settings'
 
@@ -45,22 +46,28 @@ export const useDrawStore = defineStore('draw', () => {
     winnerIndex.value >= 0 ? (candidates.value[winnerIndex.value] ?? null) : null,
   )
 
+  // Chain-config edits (Settings) change which places qualify, so they are
+  // part of the pool's identity alongside the conditions themselves
+  function currentFingerprint(): string {
+    return `${conditionsFingerprint(conditions.value)}#${chainConfigKey(
+      settings.chainDisabled,
+      settings.chainCustom,
+    )}`
+  }
+
   function setOutcome(outcome: DrawOutcome, origin: LatLng, detectedRegion: Region) {
     pool.value = outcome.pool
     candidates.value = outcome.candidates
     winnerIndex.value = outcome.winnerIndex
     relaxations.value = outcome.relaxations
     lastOrigin.value = origin
-    poolFingerprint.value = conditionsFingerprint(conditions.value)
+    poolFingerprint.value = currentFingerprint()
     region.value = detectedRegion
   }
 
-  /** False once the user edits any condition after the pool was fetched. */
+  /** False once the user edits any condition (or the chain list) post-fetch. */
   function poolMatchesConditions(): boolean {
-    return (
-      poolFingerprint.value !== null &&
-      poolFingerprint.value === conditionsFingerprint(conditions.value)
-    )
+    return poolFingerprint.value !== null && poolFingerprint.value === currentFingerprint()
   }
 
   /** Exclude the current winner and spin again from the remaining pool — no refetch. */

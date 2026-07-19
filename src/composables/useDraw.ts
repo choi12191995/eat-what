@@ -2,6 +2,7 @@ import { computed } from 'vue'
 
 import type { LatLng, RelaxationSuggestion } from '@/types/models'
 import { runDraw, styleWeight, STALE_ORIGIN_METERS } from '@/lib/draw/engine'
+import { effectivePatterns } from '@/lib/places/chains'
 import { plannedEpoch } from '@/lib/draw/planning'
 import { GooglePlacesError } from '@/lib/places/googlePlaces'
 import { getProvider } from '@/lib/places'
@@ -94,6 +95,7 @@ export function useDraw() {
             ? await history.recentAcceptedPlaceIds(cond.excludeRecentDays)
             : new Set(),
         notes,
+        chainPatterns: effectivePatterns(settings.chainDisabled, settings.chainCustom),
         weights,
       })
       drawStore.setOutcome(outcome, origin, region)

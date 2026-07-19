@@ -304,6 +304,16 @@
       "export": "Export JSON",
       "clear": "Clear history",
       "confirmClear": "Delete all draw history? This cannot be undone."
+    },
+    "chains": {
+      "title": "Chain & fast-food filter",
+      "sectionNote": "Tune which brands the 🍔 no-fast-food / ⛓️ no-chains draw filters catch.",
+      "edit": "Edit brand list",
+      "note": "{n} patterns in force. Applies whenever a draw has no-fast-food or no-chains on.",
+      "custom": "Your own keywords",
+      "customPlaceholder": "e.g. 譚仔 / Starbucks",
+      "builtin": "Built-in brands",
+      "builtinHint": "Tap to switch one off — struck-through patterns are ignored."
     }
   },
   "setup": {

@@ -14,11 +14,12 @@ import {
   type KeywordTag,
 } from '@/lib/places/keywords'
 import {
+  CHAIN_PATTERNS,
   dedupeBrands,
+  isChainBranch,
   isFastFood,
-  isKnownChain,
+  matchesChainPattern,
   multiBranchBrands,
-  normalizeBrand,
 } from '@/lib/places/chains'
 import { isOpenAt, minutesFromHHmm } from '@/lib/places/openingHours'
 import type { PlacesProvider } from '@/lib/places/provider'
@@ -46,8 +47,10 @@ export interface FilterContext {
   recentIds: ReadonlySet<string>
   /** Diner's own diary corrections by place id — newer truth than Google */
   notes?: ReadonlyMap<string, PlaceNote>
-  /** Brands seen at 2+ locations in this search — local chain evidence */
+  /** Brand roots seen at 2+ locations in this search — local chain evidence */
   chainBrands?: ReadonlySet<string>
+  /** Chain patterns in force (Settings-editable); defaults to the curated list */
+  chainPatterns?: readonly string[]
   /** "Today" for the arrive-at weekday; injectable for tests */
   now?: Date
 }
@@ -134,11 +137,15 @@ export function filterPool(
     if (haversineMeters(ctx.origin, r.location) > cond.radiusMeters * RADIUS_GRACE) return false
 
     // -- soft filters --
-    // Fast food by Google's own typing; chains by curated brand list plus
-    // "2+ branches inside this very search" self-evidence
+    // Fast food by Google's own typing. The brand pattern list (curated
+    // defaults ± user's Settings edits) applies under EITHER toggle; the
+    // "2+ branches inside this very search" self-evidence is chain-only.
     if (!o.skipChains && cond.noFastFood && isFastFood(r.types)) return false
-    if (!o.skipChains && cond.noChains) {
-      if (isKnownChain(r.name) || ctx.chainBrands?.has(normalizeBrand(r.name))) return false
+    if (!o.skipChains && (cond.noFastFood || cond.noChains)) {
+      if (matchesChainPattern(r.name, ctx.chainPatterns ?? CHAIN_PATTERNS)) return false
+    }
+    if (!o.skipChains && cond.noChains && ctx.chainBrands) {
+      if (isChainBranch(r.name, ctx.chainBrands)) return false
     }
     // Craving opt-outs: no search cost — matched by name terms, Table A
     // types, and the diner's own diary craving tags
@@ -245,6 +252,8 @@ export interface DrawEngineDeps {
   recentIds?: ReadonlySet<string>
   /** Diary corrections by place id (place notes) */
   notes?: ReadonlyMap<string, PlaceNote>
+  /** Chain patterns in force (Settings-editable) */
+  chainPatterns?: readonly string[]
   /** Optional read-through cache (wired in with IndexedDB) */
   cache?: {
     get(key: string): Promise<Restaurant[] | null>
@@ -368,6 +377,7 @@ export async function runDraw(
     recentIds: deps.recentIds ?? new Set(),
     notes: deps.notes,
     chainBrands: multiBranchBrands(raw),
+    chainPatterns: deps.chainPatterns,
   }
 
   // One wheel slot per brand, nearest branch wins — three McDonald's at
